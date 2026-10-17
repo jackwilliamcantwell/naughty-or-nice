@@ -409,7 +409,7 @@ function elfTodo(me){
   if(m && m.status==='approved') add(true,'Xmas Miracle done','',"tab='mission'");
   const r=L.rival-used(me,'rival').length, o=L.own-used(me,'own').length;
   add(r===0, r?'Report a rival elf':'Rival reports used', r?`${r} of ${L.rival} left · −${P.rival} to them`:'', "tab='report';ui={type:'rival'}");
-  add(o===0, o?'Report your own group':'Own group reports used', o?`${o} of ${L.own} left · +${P.own} to you`:'', "tab='report';ui={type:'own'}");
+  add(o===0, o?'Report an elf in your own group':'Own group reports used', o?`${o} of ${L.own} left · +${P.own} to you`:'', "tab='report';ui={type:'own'}");
   const qLeft=CONFIG.questions.filter(x=>!S.answers[me.id]?.[x.id]?.text).length;
   if(kitchenOpen()||now()<T('open')) add(qLeft===0, qLeft?'Answer Santa’s Kitchen':'Kitchen answers in', qLeft?`${qLeft} of ${CONFIG.questions.length} left · closes ${fmt(T('kitchenClose'))}`:`Editable until ${fmt(T('kitchenClose'))}`, "tab='kitchen'", qLeft&&T('kitchenClose')-now()<3*36e5);
   else add(true,'Kitchen closed', `You answered ${CONFIG.questions.length-qLeft} of ${CONFIG.questions.length}`, "tab='kitchen'");
