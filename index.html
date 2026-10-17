@@ -1,6 +1,19 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10392C"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Naughty or Nice">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBej4DXbYo7wwmo-Z471REtRd1OjBWDwNA",
+  authDomain: "naughty-or-nice-beb92.firebaseapp.com",
+  projectId: "naughty-or-nice-beb92",
+  storageBucket: "naughty-or-nice-beb92.firebasestorage.app",
+  messagingSenderId: "755936077547",
+  appId: "1:755936077547:web:a3923743f63dc7d59dc0ae"
+};
+</script>
 </head><body>
 <title>Naughty or Nice</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -118,7 +131,9 @@ table.t td.num{font-variant-numeric:tabular-nums;font-family:var(--mono);text-al
    NAUGHTY OR NICE — v1
    CONFIG holds everything you'd edit. STATE is the game data.
    ============================================================ */
-const DEMO = true; // v1: one browser plays every role. Live version shares data across phones.
+const LIVE = !!(window.FIREBASE_CONFIG && window.firebase); // live: shared Firestore. Otherwise demo: this browser only.
+const DEMO = !LIVE;
+const GAME_ID = 'friendmas-2026';
 
 const CONFIG = {
   year: 2026,
@@ -194,14 +209,61 @@ function dur(ms){ const m=Math.max(1,Math.round(ms/60000)); return m>=60?`${Math
 
 /* ---------- state ---------- */
 const KEY = 'naughty-or-nice-v1';
-const blank = () => ({ groupTasks:{}, reports:[], gossip:[], answers:{}, rankings:{}, taps:[], miracles:{}, cardNumbers:null, demoClock:T('open')+15*60000 });
-let S;
-try { S = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch(e){ S = blank(); }
-if (!S.cardNumbers) S.cardNumbers = makeCardNumbers();
-function persist(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
-function commit(){ checkMiracles(); persist(); render(); }
-window.addEventListener('storage', e => { if (e.key===KEY){ try{ S=JSON.parse(e.newValue)||S; }catch(_){} render(); } });
-function now(){ return DEMO && S.demoClock ? S.demoClock : Date.now(); }
+const blank = () => ({ groupTasks:{}, reports:[], gossip:[], answers:{}, rankings:{}, taps:[], miracles:{}, cardNumbers:null, demoClock: LIVE ? null : T('open')+15*60000 });
+let S = blank(), READY = !LIVE;
+if (DEMO){ try { S = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch(e){ S = blank(); } if (!S.cardNumbers) S.cardNumbers = makeCardNumbers(); }
+function persist(){ if(DEMO) try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function commit(){ checkMiracles(); if(LIVE) pushDiff(); else persist(); render(); }
+if (DEMO) window.addEventListener('storage', e => { if (e.key===KEY){ try{ S=JSON.parse(e.newValue)||S; }catch(_){} render(); } });
+
+/* ---------- shared database (live mode) ----------
+   One Firestore document per item, so two phones never overwrite each other. */
+const COLS=['reports','gossip','taps','answers','rankings','miracles','groupTasks','settings'];
+let remote={}, store=null;
+const clean=o=>JSON.parse(JSON.stringify(o));
+function toDocs(){
+  const ans={}; Object.entries(S.answers).forEach(([e,o])=>Object.entries(o).forEach(([q,a])=>{ ans[e+'__'+q]={elf:e,q,...a}; }));
+  return { reports:Object.fromEntries(S.reports.map(r=>[r.id,r])), gossip:Object.fromEntries(S.gossip.map(g=>[g.id,g])), taps:Object.fromEntries(S.taps.map(x=>[x.id,x])),
+    answers:ans, rankings:{...S.rankings}, miracles:{...S.miracles}, groupTasks:Object.fromEntries(Object.entries(S.groupTasks||{}).map(([k,v])=>['t'+k,v])),
+    settings:{main:{cardNumbers:S.cardNumbers||null,testClock:S.demoClock||null}} };
+}
+function fromDocs(){
+  const copy=clean(remote), d=k=>copy[k]||{}; // copy, so local edits never alter what we compare against
+  S.reports=Object.values(d('reports')); S.gossip=Object.values(d('gossip')); S.taps=Object.values(d('taps'));
+  S.answers={}; Object.values(d('answers')).forEach(a=>{ (S.answers[a.elf] ||= {})[a.q]={text:a.text,t:a.t}; });
+  S.rankings={...d('rankings')}; S.miracles={...d('miracles')};
+  S.groupTasks=Object.fromEntries(Object.entries(d('groupTasks')).map(([k,v])=>[k.slice(1),v]));
+  const st=d('settings').main||{}; S.cardNumbers=st.cardNumbers||null; S.demoClock=st.testClock||null;
+}
+function pushDiff(){
+  if(!LIVE||!READY) return;
+  const docs=toDocs();
+  COLS.forEach(c=>{ const mine=docs[c]||{}, theirs=remote[c]||{};
+    Object.entries(mine).forEach(([id,v])=>{ const cv=clean(v); if(JSON.stringify(cv)===JSON.stringify(theirs[id])) return;
+      if(c==='miracles' && !theirs[id]) store.create(c,id,cv); else store.set(c,id,cv); });
+    Object.keys(theirs).forEach(id=>{ if(!(id in mine)) store.del(c,id); }); });
+}
+function fbStore(cfg){
+  firebase.initializeApp(cfg); const fs=firebase.firestore(); const root=fs.collection('games').doc(GAME_ID);
+  const fail=e=>{ console.error(e); toast('Couldn’t save. Check your signal and try again.'); };
+  return {
+    listen(c,cb){ root.collection(c).onSnapshot(qs=>{ const m={}; qs.forEach(d=>m[d.id]=d.data()); cb(m); }, e=>{ console.error(e); toast('Can’t reach the North Pole. Check your signal.'); }); },
+    set(c,id,v){ return root.collection(c).doc(id).set(v).catch(fail); },
+    del(c,id){ return root.collection(c).doc(id).delete().catch(fail); },
+    create(c,id,v){ const ref=root.collection(c).doc(id); return fs.runTransaction(async tx=>{ const d=await tx.get(ref); if(!d.exists) tx.set(ref,v); }).catch(fail); },
+  };
+}
+function startLive(){
+  store = window.__testStore || fbStore(window.FIREBASE_CONFIG);
+  const loaded=new Set();
+  COLS.forEach(c=>store.listen(c,m=>{ remote[c]=m; loaded.add(c);
+    if(loaded.size<COLS.length) return;
+    fromDocs();
+    if(!READY){ READY=true; if(!S.cardNumbers && persona?.role==='cfo'){ S.cardNumbers=makeCardNumbers(); pushDiff(); } }
+    if(checkMiracles()) pushDiff();
+    render(); }));
+}
+function now(){ return S.demoClock ? S.demoClock : Date.now(); }
 function makeCardNumbers(){
   const pool=[]; for(let n=11;n<=99;n++) if(n%11) pool.push(n);
   const out={}; CONFIG.elves.forEach(e=>{ out[e.id]=pool.splice(Math.floor(Math.random()*pool.length),1)[0]; }); return out;
@@ -246,6 +308,7 @@ function scores(upTo=Infinity){
   return {sc,last,dip,hist,applied,rank,groups};
 }
 function checkMiracles(){
+  let added=false;
   const {dip}=scores(now());
   const used=Object.values(S.miracles).map(m=>m.mission);
   Object.entries(dip).forEach(([id,t])=>{
@@ -253,8 +316,9 @@ function checkMiracles(){
     const free=CONFIG.missions.map((_,i)=>i).filter(i=>!used.includes(i));
     const pick=(free.length?free:CONFIG.missions.map((_,i)=>i))[Math.floor(Math.random()*(free.length||CONFIG.missions.length))];
     used.push(pick);
-    S.miracles[id]={mission:pick,t,status:'assigned'};
+    S.miracles[id]={mission:pick,t,status:'assigned'}; added=true;
   });
+  return added;
 }
 
 /* ---------- routing ---------- */
@@ -267,6 +331,8 @@ function personaFromHash(){
   return null;
 }
 persona = personaFromHash() || (DEMO ? {role:'cfo'} : null);
+const CFO_DEVICE = DEMO || persona?.role==='cfo';
+window.addEventListener('hashchange',()=>{ const p=personaFromHash(); if(p){ persona=p; tab=p.role==='cfo'?'live':p.role==='chef'?'kitchen':'home'; ui={}; render(); } });
 function setPersona(v){
   const [role,id]=v.split(':'); persona={role,id}; tab = role==='cfo'?'live':role==='chef'?'kitchen':'home'; ui={}; render(); scrollTo(0,0);
 }
@@ -278,6 +344,7 @@ function toast(msg){ let el=$('.toast'); if(!el){ el=document.createElement('div
 /* ---------- render shell ---------- */
 function render(){
   const app=$('#app');
+  if(!READY){ app.innerHTML=`<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div></div></header><main class="wrap"><div class="card"><h1 class="h">Connecting to the North Pole…</h1><p class="sub">If this takes more than a few seconds, check your signal.</p></div></main>`; return; }
   if(!persona){ app.innerHTML=`<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div></div></header><main class="wrap"><div class="card"><h1 class="h">Use your personal link</h1><p class="sub">The CFOs sent every elf their own link. Open that one to get into the North Pole.</p></div></main>`; return; }
   document.body.classList.toggle('cfo', persona.role==='cfo');
   let who='', tabs=[];
@@ -289,14 +356,15 @@ function render(){
     const pg=S.gossip.filter(g=>g.status==='pending').length, pm=Object.values(S.miracles).filter(m=>m.status==='claimed').length;
     tabs=[['live','Live scores'],['gossip','Gossip',pg||''],['miracles','Miracles',pm||''],['tasks','Group tasks'],['reindeer','Reindeer'],['activity','Activity'],['results','Results deck'],['setup','Links & setup']]; }
   if(!tabs.find(t=>t[0]===tab)) tab=tabs[0][0];
-  const demo = DEMO ? `<div class="demobar"><div class="wrap"><b>Demo</b>
+  const showBar = DEMO || CFO_DEVICE || S.demoClock;
+  const demo = !showBar ? '' : (!DEMO && !CFO_DEVICE) ? `<div class="demobar"><div class="wrap"><b>Test mode</b><span class="clock">Test clock: ${fmt(now())}</span></div></div>` : `<div class="demobar"><div class="wrap"><b>${DEMO?'Demo':S.demoClock?'Test clock on':'CFO'}</b>
     <label class="hint" style="color:#C8CBFF" for="as">View as</label>
     <select id="as" onchange="setPersona(this.value)">
       <option value="cfo:" ${persona.role==='cfo'?'selected':''}>CFO control room</option>
       ${CONFIG.chefs.map(c=>`<option value="chef:${c.id}" ${persona.role==='chef'&&persona.id===c.id?'selected':''}>Chef: ${esc(c.name)}</option>`).join('')}
       ${CONFIG.elves.map(e=>`<option value="elf:${e.id}" ${persona.role==='elf'&&persona.id===e.id?'selected':''}>Elf: ${esc(e.name)} (${grp(e.group).short})</option>`).join('')}
     </select>
-    <span class="clock">Clock: ${fmt(now())} · ${phaseLabel()}</span></div></div>` : '';
+    <span class="clock">${S.demoClock?'Clock':'Real time'}: ${fmt(now())} · ${phaseLabel()}</span></div></div>`;
   const body = persona.role==='elf'?elfView():persona.role==='chef'?chefView():cfoView();
   app.innerHTML = `${demo}<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div><div class="who">${who}</div></div>
     <div class="wrap"><nav class="tabs" role="tablist">${tabs.map(([k,l,d])=>`<button class="tab" role="tab" aria-selected="${tab===k}" onclick="tab='${k}';ui={};render()">${l}${d?`<span class="dot">${d}</span>`:''}</button>`).join('')}</nav></div></header>
@@ -589,13 +657,14 @@ function cfoResults(){
 }
 function cfoSetup(){
   const base=location.href.split('#')[0];
-  const link=(label,tok)=>`<div class="item"><b>${esc(label)}</b><span class="meta" style="word-break:break-all">${esc(base)}#${tok}</span></div>`;
+  const link=(label,tok)=>`<div class="item"><b>${esc(label)}</b><span class="meta" style="word-break:break-all">${esc(base)}#${tok}</span><span class="row"><button class="btn sm ghost" onclick="copyText('${esc(base)}#${tok}')">Copy link</button><a class="btn sm ghost" style="text-decoration:none" href="#${tok}" target="_blank" rel="noopener">Open</a></span></div>`;
   const presets=[['open','-5','Before it opens'],['open','15','Fri 8:15pm'],['open','180','Fri 11pm'],['kitchenClose','-60','Sat 9am'],['kitchenClose','30','Sat 10:30am'],['chefRankBy','30','Sat 12:30pm'],['close','30','Sat 6:30pm (closed)']];
   return `<section class="card"><h1 class="h">Personal links</h1><p class="sub">In the live version each person gets only their own link. Nobody needs a password.</p>
     <div class="list">${link('CFO control room (Jack & Nathan)',CONFIG.cfoToken)}${CONFIG.chefs.map(c=>link('Chef: '+c.name,c.token)).join('')}${CONFIG.elves.map(e=>link(e.name+' · '+grp(e.group).short,e.token)).join('')}</div></section>
-  ${DEMO?`<section class="card"><h2 class="h" style="font-size:19px">Demo tools</h2><p class="sub" style="margin:0">Move the clock to test each stage, or fill the game with a made-up weekend to see the results deck.</p>
+  <section class="card"><h2 class="h" style="font-size:19px">${DEMO?'Demo tools':'Test tools'}</h2><p class="sub" style="margin:0">${DEMO?'Move the clock to test each stage, or fill the game with a made-up weekend to see the results deck.':'The test clock moves <b>everyone’s</b> phone to the same moment, so you can rehearse the weekend. Switch back to real time and reset before the real game.'}</p>
+    ${S.demoClock?`<div class="lock"><span>Test clock is on: <b>${fmt(now())}</b>. <button class="btn sm" onclick="S.demoClock=null;commit();toast('Back to real time')">Use real time</button></span></div>`:`<div class="lock"><span>Using real time.</span></div>`}
     <div><span class="lab">Set the clock</span><div class="chips">${presets.map(([k,m,l])=>`<button class="chip" onclick="S.demoClock=T('${k}')+(${m})*60000;commit();toast('Clock: ${l}')">${l}</button>`).join('')}</div></div>
-    <div class="row"><button class="btn" onclick="simulate()">Simulate a full weekend</button><button class="btn ghost" onclick="if(ui.reset){S=blank();S.cardNumbers=makeCardNumbers();commit();toast('Game reset')}else{ui.reset=1;render()}">${ui.reset?'Tap again to wipe everything':'Reset game'}</button></div></section>`:''}`;
+    <div class="row"><button class="btn" onclick="simulate()">Simulate a full weekend</button><button class="btn ghost" onclick="if(ui.reset){S=blank();S.cardNumbers=makeCardNumbers();commit();toast('Game reset')}else{ui.reset=1;render()}">${ui.reset?'Tap again to wipe everything':'Reset game'}</button></div></section>`;
 }
 
 /* ---------- downloads ---------- */
@@ -604,6 +673,7 @@ async function offerFile(name, blob){
     if(d){ await d.save({filename:name,data:blob}); toast('Downloaded'); return; } } catch(e){ if(e?.code==='declined') return; }
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
+function copyText(t){ try{ navigator.clipboard.writeText(t).then(()=>toast('Link copied'),()=>toast(t)); }catch(e){ toast(t); } }
 function exportData(){ offerFile('naughty-or-nice-data.json', new Blob([JSON.stringify({config:CONFIG,state:S},null,2)],{type:'application/json'})); }
 
 /* ============================================================
@@ -645,7 +715,7 @@ function simulate(){
   // miracles
   S.demoClock=c+30*60000; checkMiracles();
   Object.values(S.miracles).forEach(m=>{ if(rnd()<.75){ m.status='approved'; m.claimedT=Math.min(m.t+between(30,120)*60000,c-10*60000); m.approvedT=m.claimedT+5*60000; } });
-  checkMiracles(); persist(); tab='live'; persona={role:'cfo'}; render(); toast('Simulated a full weekend');
+  checkMiracles(); if(LIVE) pushDiff(); else persist(); tab='live'; persona={role:'cfo'}; render(); toast('Simulated a full weekend');
 }
 
 async function exportDeck(){
@@ -961,8 +1031,9 @@ async function buildDeck(){
 }
 
 /* ---------- boot ---------- */
-checkMiracles(); persist(); render();
-setInterval(()=>{ if(!DEMO) { checkMiracles(); render(); } },60000);
+if(LIVE) startLive(); else { checkMiracles(); persist(); }
+render();
+setInterval(()=>{ if(LIVE && READY){ if(checkMiracles()) pushDiff(); if(!document.querySelector('textarea:focus,input:focus')) render(); } },60000);
 </script>
 
 </body></html>
