@@ -108,6 +108,17 @@ button.todo.done{opacity:.65} button.todo.done .tick{background:var(--nice);bord
 button.todo.done b{text-decoration:line-through;text-decoration-thickness:1.5px}
 details.donebox summary{cursor:pointer;font-weight:800;color:var(--muted);font-size:14px;padding:4px 0}
 details.donebox[open] summary{margin-bottom:8px}
+.rdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+button.rd{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:2px}
+button.rd b{font-size:17px;color:var(--pine)} button.rd span{font-size:12px;font-family:var(--mono)}
+button.rd.vouch span{color:var(--nice)} button.rd.bite span{color:var(--berry)}
+button.rd.on{border-color:var(--pine);box-shadow:inset 0 0 0 1.5px var(--pine);background:var(--frost)}
+button.rd:disabled{opacity:.55;cursor:default;background:var(--frost)} button.rd em{font-style:normal;font-size:12px;color:var(--muted)}
+.numgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+button.num{border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+button.num b{font-family:var(--display);font-weight:400;font-size:26px;color:var(--pine);line-height:1} button.num span{font-size:11px;color:var(--muted)}
+button.num.on{background:var(--pine);border-color:var(--pine)} button.num.on b,button.num.on span{color:#fff}
+button.num:disabled{opacity:.3;text-decoration:line-through;cursor:default}
 table.t{width:100%;border-collapse:collapse;font-size:14px}
 table.t th{text-align:left;font-size:11px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid var(--line)}
 table.t td{padding:9px 8px;border-bottom:1px solid var(--frost-2);vertical-align:top}
@@ -189,7 +200,7 @@ const CONFIG = {
     { text:'Get someone to tell you their best ever Friendmas memory.', evidence:'Voice note' },
     { text:'Get someone to hand you a Christmas decoration.', evidence:'The decoration itself' },
     { text:'Get someone to say “Merry Christmas” to you in an accent.', evidence:'Voice note' },
-    { text:'Get someone to tell you, and at least one other person, what they’re getting their partner for Christmas.', evidence:'Your witness confirms to a CFO' },
+    { text:'Get someone to tell you, and at least one other person, what they’re getting their partner for Christmas.', evidence:'Your witness confirms to Mr or Mrs Claus' },
   ],
 };
 
@@ -345,22 +356,22 @@ function toast(msg){ let el=$('.toast'); if(!el){ el=document.createElement('div
 function render(){
   const app=$('#app');
   if(!READY){ app.innerHTML=`<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div></div></header><main class="wrap"><div class="card"><h1 class="h">Connecting to the North Pole…</h1><p class="sub">If this takes more than a few seconds, check your signal.</p></div></main>`; return; }
-  if(!persona){ app.innerHTML=`<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div></div></header><main class="wrap"><div class="card"><h1 class="h">Use your personal link</h1><p class="sub">The CFOs sent every elf their own link. Open that one to get into the North Pole.</p></div></main>`; return; }
+  if(!persona){ app.innerHTML=`<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div></div></header><main class="wrap"><div class="card"><h1 class="h">Use your personal link</h1><p class="sub">Mr & Mrs Claus sent every elf their own link. Open that one to get into the North Pole.</p></div></main>`; return; }
   document.body.classList.toggle('cfo', persona.role==='cfo');
   let who='', tabs=[];
   if(persona.role==='elf'){ const e=elf(persona.id); who=`<b>${esc(e.name)}</b>${esc(grp(e.group).name)}`;
     const m=S.miracles[e.id];
     tabs=[['home','Home'],['report','Naughty reports'],['kitchen','Santa’s Kitchen'],['gossip','Gossip'],...(m?[['mission','Xmas Miracle',m.status==='assigned'?'!':'']]:[]),['rules','How it works']]; }
   if(persona.role==='chef'){ const c=chef(persona.id); who=`<b>${esc(c.name)}</b>Santa’s Kitchen`; tabs=[['kitchen','Your questions']]; }
-  if(persona.role==='cfo'){ who=`<b>CFO control room</b>Jack &amp; Nathan`;
+  if(persona.role==='cfo'){ who=`<b>Claus HQ</b>Mr &amp; Mrs Claus`;
     const pg=S.gossip.filter(g=>g.status==='pending').length, pm=Object.values(S.miracles).filter(m=>m.status==='claimed').length;
     tabs=[['live','Live scores'],['gossip','Gossip',pg||''],['miracles','Miracles',pm||''],['tasks','Group tasks'],['reindeer','Reindeer'],['activity','Activity'],['results','Results deck'],['setup','Links & setup']]; }
   if(!tabs.find(t=>t[0]===tab)) tab=tabs[0][0];
   const showBar = DEMO || CFO_DEVICE || S.demoClock;
-  const demo = !showBar ? '' : (!DEMO && !CFO_DEVICE) ? `<div class="demobar"><div class="wrap"><b>Test mode</b><span class="clock">Test clock: ${fmt(now())}</span></div></div>` : `<div class="demobar"><div class="wrap"><b>${DEMO?'Demo':S.demoClock?'Test clock on':'CFO'}</b>
+  const demo = !showBar ? '' : (!DEMO && !CFO_DEVICE) ? `<div class="demobar"><div class="wrap"><b>Test mode</b><span class="clock">Test clock: ${fmt(now())}</span></div></div>` : `<div class="demobar"><div class="wrap"><b>${DEMO?'Demo':S.demoClock?'Test clock on':'Claus HQ'}</b>
     <label class="hint" style="color:#C8CBFF" for="as">View as</label>
     <select id="as" onchange="setPersona(this.value)">
-      <option value="cfo:" ${persona.role==='cfo'?'selected':''}>CFO control room</option>
+      <option value="cfo:" ${persona.role==='cfo'?'selected':''}>Claus HQ</option>
       ${CONFIG.chefs.map(c=>`<option value="chef:${c.id}" ${persona.role==='chef'&&persona.id===c.id?'selected':''}>Chef: ${esc(c.name)}</option>`).join('')}
       ${CONFIG.elves.map(e=>`<option value="elf:${e.id}" ${persona.role==='elf'&&persona.id===e.id?'selected':''}>Elf: ${esc(e.name)} (${grp(e.group).short})</option>`).join('')}
     </select>
@@ -386,24 +397,24 @@ function elfView(){
 function used(me,type){ return S.reports.filter(r=>r.from===me.id&&r.type===type); }
 function closedNote(){
   if(now()<T('open')) return `<div class="lock"><span>The workshop opens <b>${fmt(T('open'))}</b>. Nothing can be filed until then.</span></div>`;
-  if(now()>=T('close')) return `<div class="lock"><span>The workshop has closed. The CFOs reveal everything at <b>8pm</b>, after Friendmas dinner.</span></div>`;
+  if(now()>=T('close')) return `<div class="lock"><span>The workshop has closed. Mr & Mrs Claus reveal everything at <b>8pm</b>, after Friendmas dinner.</span></div>`;
   return '';
 }
 function elfTodo(me){
-  const open=isOpen(), items=[];
+  const items=[], open=isOpen();
   const add=(done,title,sub,go,urgent)=>items.push({done,title,sub,go,urgent});
   const m=S.miracles[me.id];
-  if(m && open && (m.status==='assigned'||m.status==='rejected')) add(false,'Complete your secret Xmas Miracle',`Worth +${P.miracle}. Then show a CFO your evidence.`,"tab='mission'",true);
-  if(m && m.status==='claimed') add(false,'Show a CFO your Xmas Miracle evidence','Find Jack or Nathan.',"tab='mission'",true);
-  if(m && m.status==='approved') add(true,'Xmas Miracle approved','',"tab='mission'");
+  if(m && open && (m.status==='assigned'||m.status==='rejected')) add(false,'Do your Xmas Miracle',`Secret task · +${P.miracle}`,"tab='mission'",true);
+  if(m && m.status==='claimed') add(false,'Show the Clauses your evidence','For your Xmas Miracle',"tab='mission'",true);
+  if(m && m.status==='approved') add(true,'Xmas Miracle done','',"tab='mission'");
   const r=L.rival-used(me,'rival').length, o=L.own-used(me,'own').length;
-  add(r===0, r?`File ${r} more rival group ${r===1?'report':'reports'}`:'All rival group reports filed', r?`−${P.rival} to an elf in another group. Reason needed.`:'', "tab='report';ui={type:'rival'}");
-  add(o===0, o?`File ${o} more own group ${o===1?'report':'reports'}`:'All own group reports filed', o?`Take ${P.own} points off a teammate and add them to yours. Reason needed.`:'', "tab='report';ui={type:'own'}");
+  add(r===0, r?'Report a rival elf':'Rival reports used', r?`${r} of ${L.rival} left · −${P.rival} to them`:'', "tab='report';ui={type:'rival'}");
+  add(o===0, o?'Report your own group':'Own group reports used', o?`${o} of ${L.own} left · +${P.own} to you`:'', "tab='report';ui={type:'own'}");
   const qLeft=CONFIG.questions.filter(x=>!S.answers[me.id]?.[x.id]?.text).length;
-  if(kitchenOpen()||now()<T('open')) add(qLeft===0, qLeft?`Answer ${qLeft} Santa’s Kitchen ${qLeft===1?'question':'questions'}`:'All Kitchen questions answered', qLeft?`Closes ${fmt(T('kitchenClose'))}. Top 3 answers win up to +15 each.`:`You can edit them until ${fmt(T('kitchenClose'))}.`, "tab='kitchen'", qLeft&&T('kitchenClose')-now()<3*36e5);
-  else add(true,'Santa’s Kitchen has closed', qLeft?`You answered ${4-qLeft} of 4.`:'You answered all 4.', "tab='kitchen'");
+  if(kitchenOpen()||now()<T('open')) add(qLeft===0, qLeft?'Answer Santa’s Kitchen':'Kitchen answers in', qLeft?`${qLeft} of ${CONFIG.questions.length} left · closes ${fmt(T('kitchenClose'))}`:`Editable until ${fmt(T('kitchenClose'))}`, "tab='kitchen'", qLeft&&T('kitchenClose')-now()<3*36e5);
+  else add(true,'Kitchen closed', `You answered ${CONFIG.questions.length-qLeft} of ${CONFIG.questions.length}`, "tab='kitchen'");
   const mine=S.gossip.filter(g=>g.from===me.id&&g.t<=now()).sort((a,b)=>b.t-a.t)[0], wait=mine?mine.t+L.gossipGapMin*60000-now():0;
-  add(false, wait>0?`Post more gossip in ${dur(wait)}`:'Post some gossip', 'Anonymous. One post an hour. No points, just mischief.', "tab='gossip'");
+  add(false, wait>0?`Gossip again in ${dur(wait)}`:'Post gossip', 'Anonymous · one an hour', "tab='gossip'");
   return items;
 }
 function elfHome(me){
@@ -431,18 +442,18 @@ function elfRules(me){
     <div class="item"><b>Naughty report · rival group</b><span class="hint">Max ${L.rival}, each with a reason.</span><span><span class="pill p-bad">−${P.rival} to them</span></span></div>
     <div class="item"><b>Naughty report · own group</b><span class="hint">Max ${L.own}, each with a reason. Max ${L.ownPerTarget} on the same elf.</span><span class="row"><span class="pill p-bad">−${P.own} to them</span><span class="pill p-nice">+${P.own} to you</span></span></div>
     <div class="item"><b>Santa’s Kitchen</b><span class="hint">4 questions. The top 3 answers to each score.</span><span class="row"><span class="pill p-nice">+15</span><span class="pill p-nice">+10</span><span class="pill p-nice">+5</span></span></div>
-    <div class="item"><b>Group tasks</b><span class="hint">3 tasks, done together as a group. The CFOs judge each one.</span><span><span class="pill p-nice">+${P.group} to every elf in the winning group</span></span></div>
+    <div class="item"><b>Group tasks</b><span class="hint">3 tasks, done together as a group. Mr & Mrs Claus judge each one.</span><span><span class="pill p-nice">+${P.group} to every elf in the winning group</span></span></div>
     <div class="item"><b>Reindeers</b><span class="hint">The kids pick numbered cards. Half vouch, half bite.</span><span class="row"><span class="pill p-nice">+${P.reindeer}</span><span class="pill p-bad">−${P.reindeer}</span></span></div>
     <div class="item"><b>Xmas Miracle</b><span class="hint">A secret task for anyone who drops below ${P.miracleTrigger}. None sent after ${fmt(T('miracleCutoff'))}.</span><span><span class="pill p-nice">+${P.miracle}</span></span></div>
-    <div class="item"><b>Gossip</b><span class="hint">Anonymous, vetted by the CFOs. One an hour.</span><span><span class="pill p-mute">No points, just mischief</span></span></div>
+    <div class="item"><b>Gossip</b><span class="hint">Anonymous, vetted by Mr & Mrs Claus. One an hour.</span><span><span class="pill p-mute">No points, just mischief</span></span></div>
   </div></section>
   <section class="card"><h2 class="h" style="font-size:19px">Order of service</h2><div class="list">
     ${step(fmt(T('open')),'Game opens','The app goes live and the Santa’s Kitchen questions are released.')}
     ${step(fmt(T('kitchenClose')),'Santa’s Kitchen closes','So the chefs can judge the answers before they get on with cooking dinner.')}
     ${step('~'+fmt(T('reindeerBy')),'Reindeers strike','Time is approximate: it depends on the Reindeer.')}
     ${step(fmt(T('miracleCutoff')),'Last Xmas Miracles','So anyone who gets one still has time to finish it.')}
-    ${step(fmt(T('close')),'Game closes','All reports and gossip lock. The CFOs count it all up.')}
-    ${step(fmt(T('results')),'The results','After Friendmas dinner, the CFOs reveal everything.')}
+    ${step(fmt(T('close')),'Game closes','All reports and gossip lock. Mr & Mrs Claus count it all up.')}
+    ${step(fmt(T('results')),'The results','After Friendmas dinner, Mr & Mrs Claus reveal everything.')}
   </div></section>`;
 }
 function elfReport(me){
@@ -452,7 +463,7 @@ function elfReport(me){
   const countOn=id=>list.filter(r=>r.to===id).length;
   const open=isOpen();
   return `${closedNote()}
-  <section class="card"><div><h1 class="h">File a Naughty report</h1><p class="sub">Every report needs a reason. The pettier, the better. The CFOs read them all out at the results.</p></div>
+  <section class="card"><div><h1 class="h">File a Naughty report</h1><p class="sub">Every report needs a reason. The pettier, the better. Mr & Mrs Claus read them all out at the results.</p></div>
     <div class="seg" role="group" aria-label="Report type">
       <button aria-pressed="${type==='rival'}" onclick="ui={type:'rival'};render()">Rival group</button>
       <button aria-pressed="${type==='own'}" onclick="ui={type:'own'};render()">Own group</button>
@@ -480,7 +491,7 @@ function fileReport(){
   if(list.length >= (type==='rival'?L.rival:L.own)) return toast('No reports left');
   if(type==='own' && list.filter(r=>r.to===ui.to).length>=L.ownPerTarget) return toast('Max 2 on the same elf');
   S.reports.push({id:uid(),type,from:me.id,to:ui.to,reason:ui.reason.trim(),t:now()});
-  ui={type}; commit(); toast('Filed with the CFOs. Ho ho ho.');
+  ui={type}; commit(); toast('Filed with Mr & Mrs Claus. Ho ho ho.');
 }
 function elfKitchen(me){
   const open=kitchenOpen();
@@ -503,11 +514,11 @@ function elfGossip(me){
   const wait=mine[0]?mine[0].t+L.gossipGapMin*60000-now():0;
   const feed=S.gossip.filter(g=>g.status==='approved'&&g.approvedT<=now()).sort((a,b)=>b.approvedT-a.approvedT);
   return `${closedNote()}
-  <section class="card"><div><h1 class="h">Gossip</h1><p class="sub">Anonymous. The CFOs vet it, then it goes on the feed for every elf. One post per hour.</p></div>
+  <section class="card"><div><h1 class="h">Gossip</h1><p class="sub">Anonymous. Mr & Mrs Claus vet it, then it goes on the feed for every elf. One post per hour.</p></div>
     ${isOpen() ? wait>0 ? `<div class="lock">You can post again in <b>${dur(wait)}</b>.</div>` : `
       <textarea id="gossip" rows="2" maxlength="160" placeholder="I heard…"></textarea>
-      <button class="btn" onclick="postGossip()">Send to the CFOs</button>` : ''}
-    ${mine.length?`<div class="list">${mine.slice(0,3).map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">${g.status==='pending'?'Waiting for the CFOs':g.status==='approved'?'On the feed':'Rejected by the CFOs'} · ${fmt(g.t)}</span></div>`).join('')}</div>`:''}
+      <button class="btn" onclick="postGossip()">Send to Mr & Mrs Claus</button>` : ''}
+    ${mine.length?`<div class="list">${mine.slice(0,3).map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">${g.status==='pending'?'Waiting for Mr & Mrs Claus':g.status==='approved'?'On the feed':'Rejected by Mr & Mrs Claus'} · ${fmt(g.t)}</span></div>`).join('')}</div>`:''}
   </section>
   <section class="card"><h2 class="h" style="font-size:19px">The feed</h2>
     ${feed.length?`<div class="list">${feed.map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">Anonymous elf · ${fmt(g.approvedT)}</span></div>`).join('')}</div>`:`<div class="empty">No gossip yet. Someone has to start it.</div>`}
@@ -515,7 +526,7 @@ function elfGossip(me){
 }
 function postGossip(){
   const v=$('#gossip').value.trim(); if(!v) return toast('Write something first');
-  S.gossip.push({id:uid(),from:persona.id,text:v,t:now(),status:'pending'}); commit(); toast('Sent to the CFOs for vetting');
+  S.gossip.push({id:uid(),from:persona.id,text:v,t:now(),status:'pending'}); commit(); toast('Sent to Mr & Mrs Claus for vetting');
 }
 function elfMission(me){
   const m=S.miracles[me.id]; if(!m) return '';
@@ -523,15 +534,15 @@ function elfMission(me){
   const late = now()>=T('close');
   return `<section class="card gold"><div class="eyebrow">Xmas Miracle · secret</div>
     <h1 class="h">${esc(ms.text)}</h1>
-    <p class="sub">Evidence: <b>${esc(ms.evidence)}</b>. Keep it quiet, then show a CFO.</p>
+    <p class="sub">Evidence: <b>${esc(ms.evidence)}</b>. Keep it quiet, then show Mr or Mrs Claus.</p>
     <div class="row"><span class="pill p-nice">+${P.miracle} if approved</span><span class="pill p-mute">Complete before ${fmt(T('close'))}</span></div>
-    ${m.status==='assigned' ? (late?`<div class="lock">The workshop has closed.</div>`:`<button class="btn" onclick="claimMiracle()">Mission complete</button><p class="hint" style="margin:0">Tap this, then find Jack or Nathan and show them your evidence.</p>`)
-      : m.status==='claimed' ? `<div class="lock">Waiting for a CFO to check your evidence. Go and find Jack or Nathan.</div>`
-      : m.status==='approved' ? `<div class="lock"><span><b>Approved.</b> The CFOs have logged your Xmas Miracle.</span></div>`
-      : `<div class="lock"><span>The CFOs didn’t accept that one. ${late?'':'<button class="btn sm" onclick="claimMiracle()">Try again</button>'}</span></div>`}
+    ${m.status==='assigned' ? (late?`<div class="lock">The workshop has closed.</div>`:`<button class="btn" onclick="claimMiracle()">Mission complete</button><p class="hint" style="margin:0">Tap this, then find Mr or Mrs Claus and show them your evidence.</p>`)
+      : m.status==='claimed' ? `<div class="lock">Waiting for Mr or Mrs Claus to check your evidence. Go and find Mr or Mrs Claus.</div>`
+      : m.status==='approved' ? `<div class="lock"><span><b>Approved.</b> Mr & Mrs Claus have logged your Xmas Miracle.</span></div>`
+      : `<div class="lock"><span>Mr & Mrs Claus didn’t accept that one. ${late?'':'<button class="btn sm" onclick="claimMiracle()">Try again</button>'}</span></div>`}
   </section>`;
 }
-function claimMiracle(){ const m=S.miracles[persona.id]; m.status='claimed'; m.claimedT=now(); commit(); toast('Now find a CFO'); }
+function claimMiracle(){ const m=S.miracles[persona.id]; m.status='claimed'; m.claimedT=now(); commit(); toast('Now find Mr or Mrs Claus'); }
 
 /* ============================================================
    CHEF
@@ -546,7 +557,7 @@ function chefView(){
       ${qs.map(x=>`<section class="card"><h2 class="h" style="font-size:19px">${esc(x.text)}</h2><span class="pill p-mute">${answersFor(x.id).length} of ${CONFIG.elves.length} elves have answered</span></section>`).join('')}`;
   }
   return `<section class="card pine"><div class="eyebrow" style="color:var(--gold)">Santa’s Kitchen</div><h1 class="h">Time to judge, ${esc(c.short)}</h1>
-    <p class="sub" style="color:#CFE3DA">Pick your 1st, 2nd and 3rd for each question. Add a line on why if you like; the CFOs read it out. Please finish by ${fmt(T('chefRankBy'))}.</p></section>
+    <p class="sub" style="color:#CFE3DA">Pick your 1st, 2nd and 3rd for each question. Add a line on why if you like; Mr & Mrs Claus read it out. Please finish by ${fmt(T('chefRankBy'))}.</p></section>
     ${qs.map(x=>chefQuestion(x)).join('')}`;
 }
 function chefQuestion(x){
@@ -578,7 +589,7 @@ function cfoView(){
 }
 function cfoLive(){
   const R=scores(now());
-  return `<section class="card pine"><div class="eyebrow" style="color:var(--gold)">CFO eyes only</div><h1 class="h">Live standings</h1><p class="sub" style="color:#CFE3DA">${phaseLabel()} · clock ${fmt(now())}</p></section>
+  return `<section class="card pine"><div class="eyebrow" style="color:var(--gold)">Claus eyes only</div><h1 class="h">Live standings</h1><p class="sub" style="color:#CFE3DA">${phaseLabel()} · clock ${fmt(now())}</p></section>
   <section class="grid2">${R.groups.map((g,i)=>`<div class="stat"><div class="l"><span class="gdot" style="background:${g.color}"></span>${i+1}. ${esc(g.name)}</div><div class="n" style="margin-top:6px">${g.total}</div></div>`).join('')}</section>
   <section class="card"><div class="scroll"><table class="t"><thead><tr><th>#</th><th>Elf</th><th>Group</th><th style="text-align:right">Nice pts</th><th>Rival</th><th>Own</th><th>Kitchen</th><th>Miracle</th></tr></thead><tbody>
   ${R.rank.map((id,i)=>{ const e=elf(id), m=S.miracles[id];
@@ -613,20 +624,27 @@ function cfoMiracles(){
 }
 function judgeMiracle(id,ok){ const m=S.miracles[id]; m.status=ok?'approved':'rejected'; if(ok) m.approvedT=now(); commit(); toast(ok?`+${P.miracle} logged`:'Rejected'); }
 function cfoReindeer(){
-  const r=CONFIG.reindeer.find(x=>x.name===ui.rd), num=+ui.num, match=CONFIG.elves.find(e=>S.cardNumbers[e.id]===num);
-  return `<section class="card"><h1 class="h">The Reindeer</h1><p class="sub">Write these numbers on both sets of cards. A Reindeer taps a card, you log it here. Done by ${fmt(T('reindeerBy'))}.</p>
-    <div class="grid2">${CONFIG.elves.map(e=>`<div class="stat"><div class="cardnum">${S.cardNumbers[e.id]}</div><div class="l">${esc(e.name)} · ${grp(e.group).short}</div></div>`).join('')}</div></section>
-  <section class="card"><h2 class="h" style="font-size:19px">Log a tap</h2>
-    <div><span class="lab">Which Reindeer?</span><div class="chips">${CONFIG.reindeer.map(x=>`<button class="chip" aria-pressed="${ui.rd===x.name}" onclick="ui.rd='${x.name}';render()">${x.name} <span class="hint">· ${x.type}</span></button>`).join('')}</div></div>
-    <div><label class="lab" for="cardno">Card number tapped</label><input type="number" id="cardno" inputmode="numeric" value="${esc(ui.num||'')}" oninput="ui.num=this.value;document.getElementById('match').innerHTML=matchText()"></div>
-    <div id="match">${matchText()}</div>
-    <button class="btn ${r?.type==='bite'?'berry':''}" onclick="logTap()">Log tap</button></section>
-  <section class="card"><h2 class="h" style="font-size:19px">Taps so far</h2>${S.taps.length?`<div class="list">${S.taps.map(x=>`<div class="item"><span><b>${esc(x.reindeer)}</b> ${x.type==='vouch'?`<span class="pill p-nice">vouched +${P.reindeer}</span>`:`<span class="pill p-bad">bit −${P.reindeer}</span>`} <b>${esc(elf(x.elf).name)}</b></span><span class="meta">${fmt(x.t)} · card ${S.cardNumbers[x.elf]} <button class="btn sm ghost" style="margin-left:6px" onclick="undoTap('${x.id}')">Undo</button></span></div>`).join('')}</div>`:`<div class="empty">No taps yet.</div>`}</section>`;
+  const rdTap=r=>S.taps.find(x=>x.reindeer===r.name), elfTap=id=>S.taps.find(x=>x.elf===id);
+  const cur=CONFIG.reindeer.find(x=>x.name===ui.rd && !rdTap(x));
+  const byNum=[...CONFIG.elves].sort((a,b)=>S.cardNumbers[a.id]-S.cardNumbers[b.id]);
+  return `<section class="card"><h1 class="h">The Reindeer</h1>
+    <p class="sub">Write each number below on a card and put them all in a hat. Then for each kid: tap their name, let them pick a card, and tap that number. Each Reindeer goes once and each elf can only be picked once, so take used cards out of the hat.</p>
+    <div class="row"><span class="pill p-mute">${S.taps.length} of ${CONFIG.reindeer.length} done</span><span class="pill p-mute">Aim for ~${fmt(T('reindeerBy'))}</span></div></section>
+  <section class="card"><h2 class="h" style="font-size:19px">1. Who’s up?</h2>
+    <div class="rdgrid">${CONFIG.reindeer.map(r=>{ const t=rdTap(r);
+      return `<button class="rd ${r.type} ${cur?.name===r.name?'on':''}" ${t?'disabled':''} onclick="ui={rd:'${r.name}'};render()"><b>${esc(r.name)}</b><span>${r.type==='vouch'?`Vouches +${P.reindeer}`:`Bites −${P.reindeer}`}</span>${t?`<em>Picked ${esc(elf(t.elf).name)}</em>`:''}</button>`; }).join('')}</div></section>
+  ${cur?`<section class="card"><h2 class="h" style="font-size:19px">2. Which card did ${esc(cur.name)} pick?</h2>
+    <div class="numgrid">${byNum.map(e=>{ const h=elfTap(e.id);
+      return `<button class="num ${ui.pick===e.id?'on':''}" ${h?'disabled':''} onclick="ui.pick='${e.id}';render()"><b>${S.cardNumbers[e.id]}</b><span>${esc(e.name)}</span></button>`; }).join('')}</div>
+    ${ui.pick?`<div class="confirm"><span><b>${esc(cur.name)}</b> ${cur.type==='vouch'?'vouches for':'bites'} <b>${esc(elf(ui.pick).name)}</b> (card ${S.cardNumbers[ui.pick]}).</span>
+      <div class="row"><button class="btn ${cur.type==='bite'?'berry':''}" onclick="logTap()">Confirm</button><button class="btn ghost" onclick="ui.pick=null;render()">Cancel</button></div></div>`:''}</section>`:''}
+  <section class="card"><h2 class="h" style="font-size:19px">Done so far</h2>${S.taps.length?`<div class="list">${S.taps.slice().sort((a,b)=>a.t-b.t).map(x=>`<div class="item"><span><b>${esc(x.reindeer)}</b> ${x.type==='vouch'?`<span class="pill p-nice">vouched for</span>`:`<span class="pill p-bad">bit</span>`} <b>${esc(elf(x.elf).name)}</b></span><span class="meta">${fmt(x.t)} · card ${S.cardNumbers[x.elf]} <button class="btn sm ghost" style="margin-left:6px" onclick="undoTap('${x.id}')">Undo</button></span></div>`).join('')}</div>`:`<div class="empty">No Reindeer have gone yet.</div>`}</section>`;
 }
-function matchText(){ const num=+ui.num, e=CONFIG.elves.find(x=>S.cardNumbers[x.id]===num); return ui.num? (e?`<span class="pill p-gold">Card ${num} = ${esc(e.name)} (${grp(e.group).short})</span>`:`<span class="pill p-bad">No elf has card ${esc(ui.num)}</span>`) : ''; }
 function logTap(){
-  const r=CONFIG.reindeer.find(x=>x.name===ui.rd), e=CONFIG.elves.find(x=>S.cardNumbers[x.id]===+ui.num);
-  if(!r) return toast('Pick a Reindeer'); if(!e) return toast('Enter a valid card number');
+  const r=CONFIG.reindeer.find(x=>x.name===ui.rd), e=elf(ui.pick);
+  if(!r||!e) return;
+  if(S.taps.some(x=>x.reindeer===r.name)) return toast(`${r.name} has already had their go`);
+  if(S.taps.some(x=>x.elf===e.id)) return toast(`${e.name} has already been picked`);
   S.taps.push({id:uid(),reindeer:r.name,type:r.type,elf:e.id,t:now()}); ui={}; commit(); toast(`${r.name} ${r.type==='vouch'?'vouched for':'bit'} ${e.name}`);
 }
 function undoTap(id){ S.taps=S.taps.filter(x=>x.id!==id); commit(); toast('Tap removed'); }
@@ -660,7 +678,7 @@ function cfoSetup(){
   const link=(label,tok)=>`<div class="item"><b>${esc(label)}</b><span class="meta" style="word-break:break-all">${esc(base)}#${tok}</span><span class="row"><button class="btn sm ghost" onclick="copyText('${esc(base)}#${tok}')">Copy link</button><a class="btn sm ghost" style="text-decoration:none" href="#${tok}" target="_blank" rel="noopener">Open</a></span></div>`;
   const presets=[['open','-5','Before it opens'],['open','15','Fri 8:15pm'],['open','180','Fri 11pm'],['kitchenClose','-60','Sat 9am'],['kitchenClose','30','Sat 10:30am'],['chefRankBy','30','Sat 12:30pm'],['close','30','Sat 6:30pm (closed)']];
   return `<section class="card"><h1 class="h">Personal links</h1><p class="sub">In the live version each person gets only their own link. Nobody needs a password.</p>
-    <div class="list">${link('CFO control room (Jack & Nathan)',CONFIG.cfoToken)}${CONFIG.chefs.map(c=>link('Chef: '+c.name,c.token)).join('')}${CONFIG.elves.map(e=>link(e.name+' · '+grp(e.group).short,e.token)).join('')}</div></section>
+    <div class="list">${link('Claus HQ (Mr & Mrs Claus)',CONFIG.cfoToken)}${CONFIG.chefs.map(c=>link('Chef: '+c.name,c.token)).join('')}${CONFIG.elves.map(e=>link(e.name+' · '+grp(e.group).short,e.token)).join('')}</div></section>
   <section class="card"><h2 class="h" style="font-size:19px">${DEMO?'Demo tools':'Test tools'}</h2><p class="sub" style="margin:0">${DEMO?'Move the clock to test each stage, or fill the game with a made-up weekend to see the results deck.':'The test clock moves <b>everyone’s</b> phone to the same moment, so you can rehearse the weekend. Switch back to real time and reset before the real game.'}</p>
     ${S.demoClock?`<div class="lock"><span>Test clock is on: <b>${fmt(now())}</b>. <button class="btn sm" onclick="S.demoClock=null;commit();toast('Back to real time')">Use real time</button></span></div>`:`<div class="lock"><span>Using real time.</span></div>`}
     <div><span class="lab">Set the clock</span><div class="chips">${presets.map(([k,m,l])=>`<button class="chip" onclick="S.demoClock=T('${k}')+(${m})*60000;commit();toast('Clock: ${l}')">${l}</button>`).join('')}</div></div>
@@ -709,7 +727,8 @@ function simulate(){
   // group tasks
   CONFIG.groupTasks.forEach((_,k)=>{ S.groupTasks[k]={group:pickR(CONFIG.groups).id,t:awake(o+60*60000,c-30*60000)}; });
   // reindeer
-  CONFIG.reindeer.forEach(r=>S.taps.push({id:uid(),reindeer:r.name,type:r.type,elf:pickR(CONFIG.elves).id,t:between(T('kitchenClose')+5*60000,T('reindeerBy')-5*60000)}));
+  const rdPool=[...CONFIG.elves].sort(()=>rnd()-.5);
+  CONFIG.reindeer.forEach((r,i)=>S.taps.push({id:uid(),reindeer:r.name,type:r.type,elf:rdPool[i].id,t:between(T('kitchenClose')+5*60000,T('reindeerBy')-5*60000)}));
   // rankings
   CONFIG.questions.forEach(x=>{ const ans=answersFor(x.id).map(a=>a.elf); const p=[]; while(p.length<3&&p.length<ans.length){ const e=pickR(ans); if(!p.includes(e)) p.push(e);} S.rankings[x.id]={picks:p,why:p.map(()=>pickR(why)),t:between(T('kitchenClose')+40*60000,T('chefRankBy')-10*60000)}; });
   // miracles
@@ -771,7 +790,7 @@ function insights(R){
   const ownRecv=CONFIG.elves.map(e=>({e,n:own.filter(r=>r.to===e.id).length})).sort((a,b)=>b.n-a.n);
   if(ownRecv[0]?.n>1) out.push({big:String(ownRecv[0].n), text:`times ${ownRecv[0].e.name} was knifed by their own group.`, tone:'bad'});
   const m=Object.values(S.miracles); out.push({big:`${m.length}`, text:`elves needed an Xmas Miracle. ${m.filter(x=>x.status==='approved').length} pulled it off.`, tone:'nice'});
-  const gb=S.gossip.filter(g=>g.status==='rejected').length; out.push({big:String(S.gossip.filter(g=>g.status==='approved').length), text:`bits of gossip made the feed. ${gb} ${gb===1?'was':'were'} too much even for the CFOs.`, tone:'gold'});
+  const gb=S.gossip.filter(g=>g.status==='rejected').length; out.push({big:String(S.gossip.filter(g=>g.status==='approved').length), text:`bits of gossip made the feed. ${gb} ${gb===1?'was':'were'} too much even for Mr & Mrs Claus.`, tone:'gold'});
   out.push({big:String(rival.length+own.length), text:`Naughty reports filed in ${Math.round((T('close')-T('open'))/36e5)} hours.`, tone:'bad'});
   return out.slice(0,6);
 }
@@ -828,7 +847,7 @@ async function buildDeck(){
   s.addText('FRIENDMAS '+CONFIG.year,{x:.8,y:1.6,w:8,h:.4,fontFace:BF,fontSize:16,bold:true,color:C.gold,charSpacing:6});
   s.addText('Naughty or Nice',{x:.8,y:2.05,w:8.6,h:1.5,fontFace:HF,fontSize:64,color:C.snow,fit:'shrink'});
   s.addText('The Results',{x:.8,y:3.55,w:8,h:.9,fontFace:HF,fontSize:36,color:C.gold});
-  s.addText('Presented by the Chief Fun Officers of the North Pole',{x:.8,y:4.6,w:8.5,h:.5,fontFace:BF,fontSize:18,color:C.mint});
+  s.addText('Presented by Mr & Mrs Claus',{x:.8,y:4.6,w:8.5,h:.5,fontFace:BF,fontSize:18,color:C.mint});
   art(s,'hat',9.3,1.5,3.6);
   s.addNotes('Welcome everyone. Santa is tired, and tonight we find out which group takes over Christmas, and who becomes Head Elf. Nobody has seen a single score yet.');
 
@@ -870,7 +889,7 @@ async function buildDeck(){
   tiles(false); tiles(true);
   { const all=[...S.reports].sort((p,q)=>p.t-q.t), per=9, pages=Math.max(1,Math.ceil(all.length/per));
     for(let pg=0;pg<pages;pg++){ const part=all.slice(pg*per,pg*per+per); s=pptx.addSlide(); s.hidden=true;
-      head(s,`CFO eyes only · hidden slide · ${pg+1} of ${pages}`,'Every reason given',{size:26});
+      head(s,`Claus eyes only · hidden slide · ${pg+1} of ${pages}`,'Every reason given',{size:26});
       const rows=[[hcell('WHO'),hcell('REPORTED'),hcell('TYPE'),hcell('THEME'),hcell('THE REASON')]];
       part.forEach(r=>rows.push([cell(elf(r.from).name,{bold:true,fontSize:12}),cell(elf(r.to).name,{bold:true,fontSize:12,color:C.berry}),cell(r.type==='own'?'Own group':'Rival',{fontSize:11,color:r.type==='own'?'8A5A12':C.muted}),cell(themeOf(r.reason),{fontSize:11,color:C.muted}),cell('“'+r.reason+'”',{italic:true,fontSize:12})]));
       if(!part.length) rows.push([cell('No reports'),cell(''),cell(''),cell(''),cell('')]);
