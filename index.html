@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head><body>
+<title>Naughty or Nice</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;600;800&family=DM+Mono:wght@500&display=swap">
+<style>
+/* North Pole HQ: pine header, snow cards; berry = naughty, green = nice. Deliberately single (light) theme. */
+:root{
+  --pine:#10392C; --pine-2:#1B5442; --snow:#FFFFFF; --frost:#EAF2EF; --frost-2:#DCE8E3; --line:#C9D8D2;
+  --ink:#12241E; --muted:#56685F; --berry:#B4213D; --berry-soft:#F8E3E7; --nice:#1F7A4D; --nice-soft:#DFF1E6;
+  --gold:#D8A23A; --gold-soft:#FBF0D9; --demo:#2B2F6B;
+  --display:"Bagel Fat One","Arial Black",sans-serif; --body:"Figtree","Helvetica Neue",Arial,sans-serif; --mono:"DM Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--frost)}
+body{font-family:var(--body);color:var(--ink);font-size:15px;line-height:1.45;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--pine)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2.5px solid var(--gold);outline-offset:2px}
+.wrap{max-width:var(--w,580px);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* demo bar */
+.demobar{background:var(--demo);color:#fff;font-size:13px}
+.demobar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-block:8px;--w:980px}
+.demobar b{font-family:var(--mono);font-weight:500;letter-spacing:.12em;text-transform:uppercase;font-size:11px;color:#C8CBFF}
+.demobar select{background:#fff;color:var(--ink);border:0;border-radius:8px;padding:5px 8px;max-width:100%}
+.demobar .clock{font-family:var(--mono);font-size:12px;margin-left:auto}
+
+/* header */
+.top{background:var(--pine);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px}
+.brand{font-family:var(--display);font-size:22px;line-height:1;letter-spacing:-.01em}
+.brand i{font-style:normal;color:var(--gold);font-size:14px;vertical-align:.3em;margin:0 2px}
+.who{margin-left:auto;text-align:right;font-size:12px;line-height:1.25;color:#CFE3DA;min-width:0}
+.who b{display:block;color:#fff;font-size:14px}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:transparent;color:#CFE3DA;padding:7px 12px;border-radius:999px;font-weight:600;font-size:14px;white-space:nowrap;position:relative}
+.tab[aria-selected="true"]{background:#fff;color:var(--pine)}
+.tab .dot{display:inline-block;min-width:18px;height:18px;border-radius:9px;background:var(--berry);color:#fff;font-size:11px;line-height:18px;text-align:center;margin-left:6px;padding:0 5px;font-family:var(--mono)}
+
+main.wrap{padding-block:18px 60px;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{margin:0}
+.h{font-family:var(--display);font-weight:400;color:var(--pine);font-size:24px;line-height:1.05;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--berry)}
+.card{background:var(--snow);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card.pine{background:var(--pine);color:#fff}
+.card.pine .h{color:#fff}
+.card.gold{background:var(--gold-soft);border:1.5px solid var(--gold)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--frost);border-radius:12px;padding:12px}
+section.grid2>.stat{background:var(--snow);border:0;text-align:left}
+.stat .n{font-family:var(--display);font-size:26px;line-height:1;color:var(--pine)}
+.stat .l{font-size:13px;color:var(--muted);margin-top:4px}
+.pill{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.p-nice{background:var(--nice-soft);color:var(--nice)} .p-bad{background:var(--berry-soft);color:var(--berry)} .p-gold{background:var(--gold-soft);color:#8A5A12} .p-mute{background:var(--frost);color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:800;background:var(--pine);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.berry{background:var(--berry)} .btn.gold{background:var(--gold);color:var(--pine)} .btn.ghost{background:var(--frost);color:var(--pine)}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:10px}
+.btn.wide{width:100%}
+label.lab{font-weight:800;font-size:13px;color:var(--pine);display:block;margin-bottom:6px}
+textarea,input[type=text],input[type=number],select.f{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;resize:vertical}
+textarea:focus,input:focus,select.f:focus{border-color:var(--pine);outline:none}
+.hint{font-size:12.5px;color:var(--muted)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--frost);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:9px;font-weight:800;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--pine);box-shadow:0 1px 2px rgba(16,57,44,.15)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--pine);border-color:var(--pine);color:#fff}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{background:var(--frost);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.item .meta{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.item q{quotes:"\201C" "\201D";font-style:italic}
+.empty{color:var(--muted);font-size:14px;text-align:center;padding:14px;border:1.5px dashed var(--line);border-radius:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.confirm{background:var(--gold-soft);border:1.5px solid var(--gold);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+button.todo{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:var(--frost);border-radius:12px;padding:12px}
+button.todo .tick{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--pine-2);display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff}
+button.todo .tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+button.todo .tt span{font-size:13px;color:var(--muted)}
+button.todo .arr{color:var(--muted);font-size:22px;line-height:1}
+button.todo.urgent{background:var(--gold-soft);box-shadow:inset 0 0 0 1.5px var(--gold)}
+button.todo.urgent .tick{border-color:var(--gold)}
+button.todo.done{opacity:.65} button.todo.done .tick{background:var(--nice);border-color:var(--nice)}
+button.todo.done b{text-decoration:line-through;text-decoration-thickness:1.5px}
+details.donebox summary{cursor:pointer;font-weight:800;color:var(--muted);font-size:14px;padding:4px 0}
+details.donebox[open] summary{margin-bottom:8px}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;font-size:11px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid var(--line)}
+table.t td{padding:9px 8px;border-bottom:1px solid var(--frost-2);vertical-align:top}
+table.t td.num{font-variant-numeric:tabular-nums;font-family:var(--mono);text-align:right}
+.scroll{overflow-x:auto}
+.gdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
+.cardnum{font-family:var(--display);font-size:22px;color:var(--pine)}
+.lock{display:flex;gap:10px;align-items:flex-start;background:var(--frost);border-radius:12px;padding:12px;font-size:14px}
+.answer{background:var(--frost);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.answer.picked{background:var(--gold-soft);box-shadow:inset 0 0 0 1.5px var(--gold)}
+.answer .txt{white-space:pre-wrap}
+.cfo main.wrap,.cfo .top .wrap{--w:980px}
+@media (prefers-reduced-motion:no-preference){.toast{animation:pop .2s ease-out}@keyframes pop{from{transform:translate(-50%,8px);opacity:0}}}
+</style>
+
+<div id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script>
+/* ============================================================
+   NAUGHTY OR NICE — v1
+   CONFIG holds everything you'd edit. STATE is the game data.
+   ============================================================ */
+const DEMO = true; // v1: one browser plays every role. Live version shares data across phones.
+
+const CONFIG = {
+  year: 2026,
+  // Placeholder dates: Friendmas weekend TBC
+  times: {
+    open:          '2026-12-11T20:00',
+    kitchenClose:  '2026-12-12T10:00',
+    reindeerBy:    '2026-12-12T11:00',
+    chefRankBy:    '2026-12-12T12:00',
+    miracleCutoff: '2026-12-12T17:00',
+    close:         '2026-12-12T18:00',
+    results:       '2026-12-12T20:00',
+  },
+  points: { start:100, floor:40, rival:10, own:10, kitchen:[15,10,5], reindeer:20, miracle:30, miracleTrigger:60, group:15 },
+  // Group tasks: names TBC
+  groupTasks: ['Group task 1','Group task 2','Group task 3'],
+  limits: { rival:3, own:3, ownPerTarget:2, gossipGapMin:60 },
+  groups: [
+    { id:'sbig', name:'Snowtorious B.I.G', short:'SBIG', color:'#B4213D' },
+    { id:'sbs',  name:'Sleigh Baby Sleigh', short:'SBS', color:'#1B5442' },
+    { id:'gg',   name:'Grotto Gremlins',   short:'GG',  color:'#8A5A12' },
+  ],
+  elves: [
+    { id:'gornall', name:'Gornall', group:'sbig', token:'elf-gornall-k7q2' },
+    { id:'kim',     name:'Kim',     group:'sbig', token:'elf-kim-p3x9' },
+    { id:'hannah',  name:'Hannah',  group:'sbig', token:'elf-hannah-v8m4' },
+    { id:'turk',    name:'Turk',    group:'sbs',  token:'elf-turk-r2d6' },
+    { id:'ash',     name:'Ash',     group:'sbs',  token:'elf-ash-w5n1' },
+    { id:'lauren',  name:'Lauren',  group:'sbs',  token:'elf-lauren-c4j8' },
+    { id:'pete',    name:'Pete',    group:'gg',   token:'elf-pete-h6t3' },
+    { id:'grace',   name:'Grace',   group:'gg',   token:'elf-grace-z9b5' },
+    { id:'johnson', name:'Johnson', group:'gg',   token:'elf-johnson-y1f7' },
+  ],
+  chefs: [
+    { id:'kat', name:'Kat Bell',    short:'Kat', token:'chef-kat-m2s8' },
+    { id:'dan', name:'Dan Shilcof', short:'Dan', token:'chef-dan-q4l6' },
+  ],
+  cfoToken: 'cfo-hq-x8r3w1',
+  questions: [
+    { id:'q1', chef:'kat', text:'What 3-course dinner party menu would you cook for me?' },
+    { id:'q2', chef:'kat', text:'Describe the perfect golf swing to me?' },
+    { id:'q3', chef:'dan', text:'What is your favourite thing about Scotland?' },
+    { id:'q4', chef:'dan', text:'If you had a pick up truck for a day, what would you do with it?' },
+  ],
+  reindeer: [
+    { name:'Harry', type:'vouch' }, { name:'Toby', type:'vouch' }, { name:'Sophia', type:'vouch' },
+    { name:'Alfie', type:'bite' },  { name:'Teddy', type:'bite' }, { name:'Freddy', type:'bite' },
+  ],
+  missions: [
+    { text:'Get a selfie with 3 or more of the Reindeer (the kids).', evidence:'Photo' },
+    { text:'Get someone to pour you a drink.', evidence:'Photo' },
+    { text:'Get someone to sing a line of a Christmas song.', evidence:'Voice note' },
+    { text:'Get someone to tell you their best ever Friendmas memory.', evidence:'Voice note' },
+    { text:'Get someone to hand you a Christmas decoration.', evidence:'The decoration itself' },
+    { text:'Get someone to say “Merry Christmas” to you in an accent.', evidence:'Voice note' },
+    { text:'Get someone to tell you, and at least one other person, what they’re getting their partner for Christmas.', evidence:'Your witness confirms to a CFO' },
+  ],
+};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const T = k => new Date(CONFIG.times[k]).getTime();
+const P = CONFIG.points, L = CONFIG.limits;
+const elf = id => CONFIG.elves.find(e => e.id === id);
+const grp = id => CONFIG.groups.find(g => g.id === id);
+const chef = id => CONFIG.chefs.find(c => c.id === id);
+const q = id => CONFIG.questions.find(x => x.id === id);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const DAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function fmt(t){ const d=new Date(t); let h=d.getHours(), m=d.getMinutes(); const ap=h>=12?'pm':'am'; h=h%12||12; return `${DAY[d.getDay()]} ${h}${m?':'+String(m).padStart(2,'0'):''}${ap}`; }
+function dur(ms){ const m=Math.max(1,Math.round(ms/60000)); return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m} min`; }
+
+/* ---------- state ---------- */
+const KEY = 'naughty-or-nice-v1';
+const blank = () => ({ groupTasks:{}, reports:[], gossip:[], answers:{}, rankings:{}, taps:[], miracles:{}, cardNumbers:null, demoClock:T('open')+15*60000 });
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch(e){ S = blank(); }
+if (!S.cardNumbers) S.cardNumbers = makeCardNumbers();
+function persist(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function commit(){ checkMiracles(); persist(); render(); }
+window.addEventListener('storage', e => { if (e.key===KEY){ try{ S=JSON.parse(e.newValue)||S; }catch(_){} render(); } });
+function now(){ return DEMO && S.demoClock ? S.demoClock : Date.now(); }
+function makeCardNumbers(){
+  const pool=[]; for(let n=11;n<=99;n++) if(n%11) pool.push(n);
+  const out={}; CONFIG.elves.forEach(e=>{ out[e.id]=pool.splice(Math.floor(Math.random()*pool.length),1)[0]; }); return out;
+}
+
+/* ---------- phases ---------- */
+const isOpen = () => now()>=T('open') && now()<T('close');
+const kitchenOpen = () => now()>=T('open') && now()<T('kitchenClose');
+const phaseLabel = () => now()<T('open') ? `Opens ${fmt(T('open'))}` : now()<T('close') ? `Open · closes ${fmt(T('close'))}` : 'Closed · results at 8pm';
+
+/* ---------- scoring engine ---------- */
+function ledger(){
+  const it=[];
+  S.reports.forEach(r=>it.push({t:r.t,kind:r.type,from:r.from,to:r.to,reason:r.reason,id:r.id}));
+  Object.entries(S.rankings).forEach(([qid,rk])=>rk.picks.forEach((e,i)=>{ if(e) it.push({t:rk.t,kind:'kitchen',to:e,amt:P.kitchen[i],qid,place:i+1}); }));
+  S.taps.forEach(x=>it.push({t:x.t,kind:x.type,to:x.elf,reindeer:x.reindeer,id:x.id}));
+  Object.entries(S.miracles).forEach(([e,m])=>{ if(m.status==='approved') it.push({t:m.approvedT,kind:'miracle',to:e}); });
+  Object.entries(S.groupTasks||{}).forEach(([k,g])=>CONFIG.elves.filter(e=>e.group===g.group).forEach(e=>it.push({t:g.t,kind:'group',to:e.id,task:+k})));
+  return it.sort((a,b)=>a.t-b.t);
+}
+function scores(upTo=Infinity){
+  const sc={}, last={}, dip={};
+  CONFIG.elves.forEach(e=>{ sc[e.id]=P.start; last[e.id]=0; });
+  const hist=[{t:T('open'),s:{...sc}}], applied=[];
+  const down=(id,n)=>{ const d=Math.min(n,Math.max(0,sc[id]-P.floor)); sc[id]-=d; return d; };
+  for(const x of ledger()){
+    if(x.t>upTo) break;
+    const fx={};
+    if(x.kind==='rival'){ fx[x.to]=-down(x.to,P.rival); }
+    else if(x.kind==='own'){ const d=down(x.to,P.own); fx[x.to]=-d; sc[x.from]+=d; fx[x.from]=d; }
+    else if(x.kind==='kitchen'){ sc[x.to]+=x.amt; fx[x.to]=x.amt; }
+    else if(x.kind==='vouch'){ sc[x.to]+=P.reindeer; fx[x.to]=P.reindeer; }
+    else if(x.kind==='bite'){ fx[x.to]=-down(x.to,P.reindeer); }
+    else if(x.kind==='miracle'){ sc[x.to]+=P.miracle; fx[x.to]=P.miracle; }
+    else if(x.kind==='group'){ sc[x.to]+=P.group; fx[x.to]=P.group; }
+    Object.keys(fx).forEach(id=>{ if(fx[id]) last[id]=x.t; if(sc[id]<P.miracleTrigger && !dip[id]) dip[id]=x.t; });
+    applied.push({...x,fx}); hist.push({t:x.t,s:{...sc}});
+  }
+  const rank=CONFIG.elves.map(e=>e.id).sort((a,b)=>sc[b]-sc[a] || last[a]-last[b]);
+  const groups=CONFIG.groups.map(g=>({...g,total:CONFIG.elves.filter(e=>e.group===g.id).reduce((n,e)=>n+sc[e.id],0),last:Math.max(...CONFIG.elves.filter(e=>e.group===g.id).map(e=>last[e.id]))}))
+    .sort((a,b)=>b.total-a.total || a.last-b.last);
+  return {sc,last,dip,hist,applied,rank,groups};
+}
+function checkMiracles(){
+  const {dip}=scores(now());
+  const used=Object.values(S.miracles).map(m=>m.mission);
+  Object.entries(dip).forEach(([id,t])=>{
+    if(S.miracles[id] || t>T('miracleCutoff')) return;
+    const free=CONFIG.missions.map((_,i)=>i).filter(i=>!used.includes(i));
+    const pick=(free.length?free:CONFIG.missions.map((_,i)=>i))[Math.floor(Math.random()*(free.length||CONFIG.missions.length))];
+    used.push(pick);
+    S.miracles[id]={mission:pick,t,status:'assigned'};
+  });
+}
+
+/* ---------- routing ---------- */
+let persona = null, tab = 'home', ui = {};
+function personaFromHash(){
+  const h=(location.hash||'').slice(1);
+  if(h===CONFIG.cfoToken) return {role:'cfo'};
+  const e=CONFIG.elves.find(x=>x.token===h); if(e) return {role:'elf',id:e.id};
+  const c=CONFIG.chefs.find(x=>x.token===h); if(c) return {role:'chef',id:c.id};
+  return null;
+}
+persona = personaFromHash() || (DEMO ? {role:'cfo'} : null);
+function setPersona(v){
+  const [role,id]=v.split(':'); persona={role,id}; tab = role==='cfo'?'live':role==='chef'?'kitchen':'home'; ui={}; render(); scrollTo(0,0);
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){ let el=$('.toast'); if(!el){ el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); document.body.appendChild(el);} el.textContent=msg; clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.remove(),2600); }
+
+/* ---------- render shell ---------- */
+function render(){
+  const app=$('#app');
+  if(!persona){ app.innerHTML=`<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div></div></header><main class="wrap"><div class="card"><h1 class="h">Use your personal link</h1><p class="sub">The CFOs sent every elf their own link. Open that one to get into the North Pole.</p></div></main>`; return; }
+  document.body.classList.toggle('cfo', persona.role==='cfo');
+  let who='', tabs=[];
+  if(persona.role==='elf'){ const e=elf(persona.id); who=`<b>${esc(e.name)}</b>${esc(grp(e.group).name)}`;
+    const m=S.miracles[e.id];
+    tabs=[['home','Home'],['report','Naughty reports'],['kitchen','Santa’s Kitchen'],['gossip','Gossip'],...(m?[['mission','Xmas Miracle',m.status==='assigned'?'!':'']]:[]),['rules','How it works']]; }
+  if(persona.role==='chef'){ const c=chef(persona.id); who=`<b>${esc(c.name)}</b>Santa’s Kitchen`; tabs=[['kitchen','Your questions']]; }
+  if(persona.role==='cfo'){ who=`<b>CFO control room</b>Jack &amp; Nathan`;
+    const pg=S.gossip.filter(g=>g.status==='pending').length, pm=Object.values(S.miracles).filter(m=>m.status==='claimed').length;
+    tabs=[['live','Live scores'],['gossip','Gossip',pg||''],['miracles','Miracles',pm||''],['tasks','Group tasks'],['reindeer','Reindeer'],['activity','Activity'],['results','Results deck'],['setup','Links & setup']]; }
+  if(!tabs.find(t=>t[0]===tab)) tab=tabs[0][0];
+  const demo = DEMO ? `<div class="demobar"><div class="wrap"><b>Demo</b>
+    <label class="hint" style="color:#C8CBFF" for="as">View as</label>
+    <select id="as" onchange="setPersona(this.value)">
+      <option value="cfo:" ${persona.role==='cfo'?'selected':''}>CFO control room</option>
+      ${CONFIG.chefs.map(c=>`<option value="chef:${c.id}" ${persona.role==='chef'&&persona.id===c.id?'selected':''}>Chef: ${esc(c.name)}</option>`).join('')}
+      ${CONFIG.elves.map(e=>`<option value="elf:${e.id}" ${persona.role==='elf'&&persona.id===e.id?'selected':''}>Elf: ${esc(e.name)} (${grp(e.group).short})</option>`).join('')}
+    </select>
+    <span class="clock">Clock: ${fmt(now())} · ${phaseLabel()}</span></div></div>` : '';
+  const body = persona.role==='elf'?elfView():persona.role==='chef'?chefView():cfoView();
+  app.innerHTML = `${demo}<header class="top"><div class="wrap"><div class="brand">Naughty<i>or</i>Nice</div><div class="who">${who}</div></div>
+    <div class="wrap"><nav class="tabs" role="tablist">${tabs.map(([k,l,d])=>`<button class="tab" role="tab" aria-selected="${tab===k}" onclick="tab='${k}';ui={};render()">${l}${d?`<span class="dot">${d}</span>`:''}</button>`).join('')}</nav></div></header>
+    <main class="wrap">${body}</main>`;
+}
+
+/* ============================================================
+   ELF
+   ============================================================ */
+function elfView(){
+  const me=elf(persona.id);
+  if(tab==='report') return elfReport(me);
+  if(tab==='kitchen') return elfKitchen(me);
+  if(tab==='gossip') return elfGossip(me);
+  if(tab==='mission') return elfMission(me);
+  if(tab==='rules') return elfRules(me);
+  return elfHome(me);
+}
+function used(me,type){ return S.reports.filter(r=>r.from===me.id&&r.type===type); }
+function closedNote(){
+  if(now()<T('open')) return `<div class="lock"><span>The workshop opens <b>${fmt(T('open'))}</b>. Nothing can be filed until then.</span></div>`;
+  if(now()>=T('close')) return `<div class="lock"><span>The workshop has closed. The CFOs reveal everything at <b>8pm</b>, after Friendmas dinner.</span></div>`;
+  return '';
+}
+function elfTodo(me){
+  const open=isOpen(), items=[];
+  const add=(done,title,sub,go,urgent)=>items.push({done,title,sub,go,urgent});
+  const m=S.miracles[me.id];
+  if(m && open && (m.status==='assigned'||m.status==='rejected')) add(false,'Complete your secret Xmas Miracle',`Worth +${P.miracle}. Then show a CFO your evidence.`,"tab='mission'",true);
+  if(m && m.status==='claimed') add(false,'Show a CFO your Xmas Miracle evidence','Find Jack or Nathan.',"tab='mission'",true);
+  if(m && m.status==='approved') add(true,'Xmas Miracle approved','',"tab='mission'");
+  const r=L.rival-used(me,'rival').length, o=L.own-used(me,'own').length;
+  add(r===0, r?`File ${r} more rival group ${r===1?'report':'reports'}`:'All rival group reports filed', r?`−${P.rival} to an elf in another group. Reason needed.`:'', "tab='report';ui={type:'rival'}");
+  add(o===0, o?`File ${o} more own group ${o===1?'report':'reports'}`:'All own group reports filed', o?`Take ${P.own} points off a teammate and add them to yours. Reason needed.`:'', "tab='report';ui={type:'own'}");
+  const qLeft=CONFIG.questions.filter(x=>!S.answers[me.id]?.[x.id]?.text).length;
+  if(kitchenOpen()||now()<T('open')) add(qLeft===0, qLeft?`Answer ${qLeft} Santa’s Kitchen ${qLeft===1?'question':'questions'}`:'All Kitchen questions answered', qLeft?`Closes ${fmt(T('kitchenClose'))}. Top 3 answers win up to +15 each.`:`You can edit them until ${fmt(T('kitchenClose'))}.`, "tab='kitchen'", qLeft&&T('kitchenClose')-now()<3*36e5);
+  else add(true,'Santa’s Kitchen has closed', qLeft?`You answered ${4-qLeft} of 4.`:'You answered all 4.', "tab='kitchen'");
+  const mine=S.gossip.filter(g=>g.from===me.id&&g.t<=now()).sort((a,b)=>b.t-a.t)[0], wait=mine?mine.t+L.gossipGapMin*60000-now():0;
+  add(false, wait>0?`Post more gossip in ${dur(wait)}`:'Post some gossip', 'Anonymous. One post an hour. No points, just mischief.', "tab='gossip'");
+  return items;
+}
+function elfHome(me){
+  const items=elfTodo(me), todo=items.filter(i=>!i.done).sort((a,b)=>(b.urgent?1:0)-(a.urgent?1:0)), done=items.filter(i=>i.done);
+  const feed=S.gossip.filter(g=>g.status==='approved'&&g.approvedT<=now()).sort((a,b)=>b.approvedT-a.approvedT);
+  const li=i=>`<button class="todo ${i.done?'done':''} ${i.urgent?'urgent':''}" onclick="${i.go};render();scrollTo(0,0)"><span class="tick" aria-hidden="true">${i.done?'✓':''}</span><span class="tt"><b>${esc(i.title)}</b>${i.sub?`<span>${esc(i.sub)}</span>`:''}</span><span class="arr" aria-hidden="true">›</span></button>`;
+  return `
+  <section class="card pine"><div class="eyebrow" style="color:var(--gold)">${esc(grp(me.group).name)}</div>
+    <h1 class="h">Hello, ${esc(me.name)}</h1>
+    <div class="row"><span class="pill p-gold">${phaseLabel()}</span><span class="pill" style="background:rgba(255,255,255,.12);color:#CFE3DA">Your points are hidden</span></div></section>
+  ${closedNote()}
+  <section class="card"><h2 class="h" style="font-size:20px">Your to-do list</h2>
+    <div class="list">${todo.map(li).join('')||'<div class="empty">Nothing left to do. Sit back and look innocent.</div>'}</div>
+    ${done.length?`<details class="donebox"><summary>Done (${done.length})</summary><div class="list">${done.map(li).join('')}</div></details>`:''}
+  </section>
+  <section class="card"><div class="row" style="justify-content:space-between"><h2 class="h" style="font-size:20px">Gossip feed</h2><button class="btn sm ghost" onclick="tab='gossip';render()">Post gossip</button></div>
+    ${feed.length?`<div class="list">${feed.slice(0,6).map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">Anonymous elf · ${fmt(g.approvedT)}</span></div>`).join('')}</div>${feed.length>6?`<button class="btn sm ghost" onclick="tab='gossip';render()">See all ${feed.length}</button>`:''}`:`<div class="empty">No gossip yet. Someone has to start it.</div>`}
+  </section>`;
+}
+function elfRules(me){
+  const step=(when,what,why)=>`<div class="item"><span class="pill p-gold" style="align-self:flex-start">${when}</span><b>${what}</b><span class="hint">${why}</span></div>`;
+  return `<section class="card"><h1 class="h">How it works</h1><p class="sub">Every elf starts on ${P.start} Nice points. Nobody sees any scores until the results at 8pm on Saturday. The top elf becomes Head Elf; the group with the most points between them takes over Christmas. The Head Elf doesn’t have to come from the winning group.</p>
+    <div class="row"><span class="pill p-mute">Floor: ${P.floor} points</span><span class="pill p-mute">Ties: whoever got there first</span></div></section>
+  <section class="card"><h2 class="h" style="font-size:19px">Scoring</h2><div class="list">
+    <div class="item"><b>Naughty report · rival group</b><span class="hint">Max ${L.rival}, each with a reason.</span><span><span class="pill p-bad">−${P.rival} to them</span></span></div>
+    <div class="item"><b>Naughty report · own group</b><span class="hint">Max ${L.own}, each with a reason. Max ${L.ownPerTarget} on the same elf.</span><span class="row"><span class="pill p-bad">−${P.own} to them</span><span class="pill p-nice">+${P.own} to you</span></span></div>
+    <div class="item"><b>Santa’s Kitchen</b><span class="hint">4 questions. The top 3 answers to each score.</span><span class="row"><span class="pill p-nice">+15</span><span class="pill p-nice">+10</span><span class="pill p-nice">+5</span></span></div>
+    <div class="item"><b>Group tasks</b><span class="hint">3 tasks, done together as a group. The CFOs judge each one.</span><span><span class="pill p-nice">+${P.group} to every elf in the winning group</span></span></div>
+    <div class="item"><b>Reindeers</b><span class="hint">The kids pick numbered cards. Half vouch, half bite.</span><span class="row"><span class="pill p-nice">+${P.reindeer}</span><span class="pill p-bad">−${P.reindeer}</span></span></div>
+    <div class="item"><b>Xmas Miracle</b><span class="hint">A secret task for anyone who drops below ${P.miracleTrigger}. None sent after ${fmt(T('miracleCutoff'))}.</span><span><span class="pill p-nice">+${P.miracle}</span></span></div>
+    <div class="item"><b>Gossip</b><span class="hint">Anonymous, vetted by the CFOs. One an hour.</span><span><span class="pill p-mute">No points, just mischief</span></span></div>
+  </div></section>
+  <section class="card"><h2 class="h" style="font-size:19px">Order of service</h2><div class="list">
+    ${step(fmt(T('open')),'Game opens','The app goes live and the Santa’s Kitchen questions are released.')}
+    ${step(fmt(T('kitchenClose')),'Santa’s Kitchen closes','So the chefs can judge the answers before they get on with cooking dinner.')}
+    ${step('~'+fmt(T('reindeerBy')),'Reindeers strike','Time is approximate: it depends on the Reindeer.')}
+    ${step(fmt(T('miracleCutoff')),'Last Xmas Miracles','So anyone who gets one still has time to finish it.')}
+    ${step(fmt(T('close')),'Game closes','All reports and gossip lock. The CFOs count it all up.')}
+    ${step(fmt(T('results')),'The results','After Friendmas dinner, the CFOs reveal everything.')}
+  </div></section>`;
+}
+function elfReport(me){
+  const type=ui.type||'rival';
+  const list=used(me,type), max=type==='rival'?L.rival:L.own, left=max-list.length;
+  const targets=CONFIG.elves.filter(e=> type==='rival' ? e.group!==me.group : (e.group===me.group && e.id!==me.id));
+  const countOn=id=>list.filter(r=>r.to===id).length;
+  const open=isOpen();
+  return `${closedNote()}
+  <section class="card"><div><h1 class="h">File a Naughty report</h1><p class="sub">Every report needs a reason. The pettier, the better. The CFOs read them all out at the results.</p></div>
+    <div class="seg" role="group" aria-label="Report type">
+      <button aria-pressed="${type==='rival'}" onclick="ui={type:'rival'};render()">Rival group</button>
+      <button aria-pressed="${type==='own'}" onclick="ui={type:'own'};render()">Own group</button>
+    </div>
+    <div class="row"><span class="pill ${left?'p-gold':'p-mute'}">${left} of ${max} left</span>
+      ${type==='rival'?`<span class="pill p-bad">−${P.rival} to them</span>`:`<span class="pill p-bad">−${P.own} to them</span><span class="pill p-nice">+${P.own} to you</span>`}</div>
+    ${left && open ? `
+      <div><span class="lab">Who’s been naughty?</span><div class="chips">${targets.map(t=>{ const full=type==='own'&&countOn(t.id)>=L.ownPerTarget;
+        return `<button class="chip" aria-pressed="${ui.to===t.id}" ${full?'disabled title="Max 2 reports on the same elf"':''} onclick="ui.to='${t.id}';ui.confirm=false;render()">${esc(t.name)}${type==='rival'?` <span class="hint">· ${grp(t.group).short}</span>`:''}</button>`; }).join('')}</div>
+        ${type==='own'?`<p class="hint" style="margin:6px 0 0">Max ${L.ownPerTarget} reports on the same elf.</p>`:''}</div>
+      <div><label class="lab" for="reason">Reason</label><textarea id="reason" rows="2" maxlength="160" placeholder="e.g. Didn’t pass me the salt" oninput="ui.reason=this.value">${esc(ui.reason||'')}</textarea></div>
+      ${ui.confirm ? `<div class="confirm"><span>Report <b>${esc(elf(ui.to).name)}</b> for <q>${esc(ui.reason)}</q>? This can’t be undone.</span>
+          <div class="row"><button class="btn berry" onclick="fileReport()">Yes, file it</button><button class="btn ghost" onclick="ui.confirm=false;render()">Cancel</button></div></div>`
+        : `<button class="btn berry wide" onclick="if(!ui.to){toast('Pick an elf first');return} if(!(ui.reason||'').trim()){toast('Add a reason');return} ui.confirm=true;render()">File Naughty report</button>`}
+    ` : left ? '' : `<div class="lock">You’ve used all your ${type==='rival'?'rival group':'own group'} reports.</div>`}
+  </section>
+  <section class="card"><h2 class="h" style="font-size:19px">Your reports</h2>
+    ${S.reports.filter(r=>r.from===me.id).length? `<div class="list">${S.reports.filter(r=>r.from===me.id).sort((a,b)=>b.t-a.t).map(r=>`<div class="item"><span><b>${esc(elf(r.to).name)}</b> <span class="pill ${r.type==='own'?'p-gold':'p-bad'}">${r.type==='own'?'Own group':'Rival'}</span></span><q>${esc(r.reason)}</q><span class="meta">${fmt(r.t)}</span></div>`).join('')}</div>` : `<div class="empty">No reports filed yet.</div>`}
+  </section>`;
+}
+function fileReport(){
+  const me=elf(persona.id), type=ui.type||'rival';
+  if(!isOpen()) return toast('The workshop is closed');
+  const list=used(me,type);
+  if(list.length >= (type==='rival'?L.rival:L.own)) return toast('No reports left');
+  if(type==='own' && list.filter(r=>r.to===ui.to).length>=L.ownPerTarget) return toast('Max 2 on the same elf');
+  S.reports.push({id:uid(),type,from:me.id,to:ui.to,reason:ui.reason.trim(),t:now()});
+  ui={type}; commit(); toast('Filed with the CFOs. Ho ho ho.');
+}
+function elfKitchen(me){
+  const open=kitchenOpen();
+  return `${now()<T('open')?closedNote():''}
+  <section class="card"><div><h1 class="h">Santa’s Kitchen</h1><p class="sub">The chefs have four questions. Answers are anonymous. The chefs rank their top 3 for each question, and those elves earn Nice points.</p></div>
+    <div class="row"><span class="pill p-nice">1st +15</span><span class="pill p-nice">2nd +10</span><span class="pill p-nice">3rd +5</span><span class="pill ${open?'p-gold':'p-mute'}">${open?`Closes ${fmt(T('kitchenClose'))}`:now()<T('open')?`Opens ${fmt(T('open'))}`:'Closed'}</span></div></section>
+  ${now()>=T('open') ? CONFIG.questions.map((x,i)=>{ const a=S.answers[me.id]?.[x.id];
+    return `<section class="card"><div class="eyebrow">Question ${i+1}</div><h2 class="h" style="font-size:19px">${esc(x.text)}</h2>
+      ${open?`<textarea id="a-${x.id}" rows="3" maxlength="600" placeholder="Your answer">${esc(a?.text||'')}</textarea>
+        <div class="row"><button class="btn sm" onclick="saveAnswer('${x.id}')">${a?'Update answer':'Save answer'}</button>${a?`<span class="hint">Saved ${fmt(a.t)}</span>`:''}</div>`
+      : `<div class="item">${a?`<span class="txt">${esc(a.text)}</span>`:'<span class="hint">You didn’t answer this one.</span>'}</div>`}</section>`; }).join('') : ''}`;
+}
+function saveAnswer(qid){
+  if(!kitchenOpen()) return toast('Santa’s Kitchen is closed');
+  const v=$('#a-'+qid).value.trim(); if(!v) return toast('Write an answer first');
+  (S.answers[persona.id] ||= {})[qid]={text:v,t:now()}; commit(); toast('Answer saved');
+}
+function elfGossip(me){
+  const mine=S.gossip.filter(g=>g.from===me.id&&g.t<=now()).sort((a,b)=>b.t-a.t);
+  const wait=mine[0]?mine[0].t+L.gossipGapMin*60000-now():0;
+  const feed=S.gossip.filter(g=>g.status==='approved'&&g.approvedT<=now()).sort((a,b)=>b.approvedT-a.approvedT);
+  return `${closedNote()}
+  <section class="card"><div><h1 class="h">Gossip</h1><p class="sub">Anonymous. The CFOs vet it, then it goes on the feed for every elf. One post per hour.</p></div>
+    ${isOpen() ? wait>0 ? `<div class="lock">You can post again in <b>${dur(wait)}</b>.</div>` : `
+      <textarea id="gossip" rows="2" maxlength="160" placeholder="I heard…"></textarea>
+      <button class="btn" onclick="postGossip()">Send to the CFOs</button>` : ''}
+    ${mine.length?`<div class="list">${mine.slice(0,3).map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">${g.status==='pending'?'Waiting for the CFOs':g.status==='approved'?'On the feed':'Rejected by the CFOs'} · ${fmt(g.t)}</span></div>`).join('')}</div>`:''}
+  </section>
+  <section class="card"><h2 class="h" style="font-size:19px">The feed</h2>
+    ${feed.length?`<div class="list">${feed.map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">Anonymous elf · ${fmt(g.approvedT)}</span></div>`).join('')}</div>`:`<div class="empty">No gossip yet. Someone has to start it.</div>`}
+  </section>`;
+}
+function postGossip(){
+  const v=$('#gossip').value.trim(); if(!v) return toast('Write something first');
+  S.gossip.push({id:uid(),from:persona.id,text:v,t:now(),status:'pending'}); commit(); toast('Sent to the CFOs for vetting');
+}
+function elfMission(me){
+  const m=S.miracles[me.id]; if(!m) return '';
+  const ms=CONFIG.missions[m.mission];
+  const late = now()>=T('close');
+  return `<section class="card gold"><div class="eyebrow">Xmas Miracle · secret</div>
+    <h1 class="h">${esc(ms.text)}</h1>
+    <p class="sub">Evidence: <b>${esc(ms.evidence)}</b>. Keep it quiet, then show a CFO.</p>
+    <div class="row"><span class="pill p-nice">+${P.miracle} if approved</span><span class="pill p-mute">Complete before ${fmt(T('close'))}</span></div>
+    ${m.status==='assigned' ? (late?`<div class="lock">The workshop has closed.</div>`:`<button class="btn" onclick="claimMiracle()">Mission complete</button><p class="hint" style="margin:0">Tap this, then find Jack or Nathan and show them your evidence.</p>`)
+      : m.status==='claimed' ? `<div class="lock">Waiting for a CFO to check your evidence. Go and find Jack or Nathan.</div>`
+      : m.status==='approved' ? `<div class="lock"><span><b>Approved.</b> The CFOs have logged your Xmas Miracle.</span></div>`
+      : `<div class="lock"><span>The CFOs didn’t accept that one. ${late?'':'<button class="btn sm" onclick="claimMiracle()">Try again</button>'}</span></div>`}
+  </section>`;
+}
+function claimMiracle(){ const m=S.miracles[persona.id]; m.status='claimed'; m.claimedT=now(); commit(); toast('Now find a CFO'); }
+
+/* ============================================================
+   CHEF
+   ============================================================ */
+function shuffleSeed(arr,seed){ let s=0; for(const c of seed) s=(s*31+c.charCodeAt(0))>>>0; const a=[...arr]; for(let i=a.length-1;i>0;i--){ s=(s*1103515245+12345)>>>0; const j=s%(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function answersFor(qid){ return shuffleSeed(CONFIG.elves.filter(e=>S.answers[e.id]?.[qid]?.text).map(e=>({elf:e.id,text:S.answers[e.id][qid].text})), qid); }
+function chefView(){
+  const c=chef(persona.id), qs=CONFIG.questions.filter(x=>x.chef===c.id);
+  if(now()<T('kitchenClose')){
+    return `<section class="card pine"><div class="eyebrow" style="color:var(--gold)">Santa’s Kitchen</div><h1 class="h">Hello, ${esc(c.short)}</h1>
+      <p class="sub" style="color:#CFE3DA">Answers close ${fmt(T('kitchenClose'))}. Then you rank your top 3 for each question, by ${fmt(T('chefRankBy'))}. You won’t see who wrote what.</p></section>
+      ${qs.map(x=>`<section class="card"><h2 class="h" style="font-size:19px">${esc(x.text)}</h2><span class="pill p-mute">${answersFor(x.id).length} of ${CONFIG.elves.length} elves have answered</span></section>`).join('')}`;
+  }
+  return `<section class="card pine"><div class="eyebrow" style="color:var(--gold)">Santa’s Kitchen</div><h1 class="h">Time to judge, ${esc(c.short)}</h1>
+    <p class="sub" style="color:#CFE3DA">Pick your 1st, 2nd and 3rd for each question. Add a line on why if you like; the CFOs read it out. Please finish by ${fmt(T('chefRankBy'))}.</p></section>
+    ${qs.map(x=>chefQuestion(x)).join('')}`;
+}
+function chefQuestion(x){
+  const done=S.rankings[x.id], ans=answersFor(x.id);
+  const draft = ui['d-'+x.id] ||= {picks:[null,null,null],why:['','','']};
+  const labels=['1st','2nd','3rd'];
+  if(done) return `<section class="card"><h2 class="h" style="font-size:19px">${esc(x.text)}</h2><div class="lock"><span><b>Submitted ${fmt(done.t)}.</b> Your picks are locked in.</span></div>
+    <div class="list">${done.picks.map((e,i)=>e?`<div class="answer picked"><span class="pill p-gold">${labels[i]} · +${P.kitchen[i]}</span><span class="txt">${esc(S.answers[e]?.[x.id]?.text)}</span>${done.why[i]?`<span class="hint">Why: ${esc(done.why[i])}</span>`:''}</div>`:'').join('')}</div></section>`;
+  if(!ans.length) return `<section class="card"><h2 class="h" style="font-size:19px">${esc(x.text)}</h2><div class="empty">No answers came in for this one.</div></section>`;
+  return `<section class="card"><h2 class="h" style="font-size:19px">${esc(x.text)}</h2><p class="hint" style="margin:0">${ans.length} anonymous answers</p>
+    <div class="list">${ans.map((a,k)=>{ const p=draft.picks.indexOf(a.elf);
+      return `<div class="answer ${p>=0?'picked':''}"><span class="meta" style="font-family:var(--mono);font-size:12px;color:var(--muted)">Answer ${String.fromCharCode(65+k)}</span><span class="txt">${esc(a.text)}</span>
+        <div class="row">${labels.map((l,i)=>`<button class="chip" aria-pressed="${draft.picks[i]===a.elf}" onclick="pick('${x.id}',${i},'${a.elf}')">${l}</button>`).join('')}</div>
+        ${p>=0?`<input type="text" id="why-${x.id}-${p}" maxlength="120" placeholder="Why? (optional)" value="${esc(draft.why[p])}" oninput="ui['d-${x.id}'].why[${p}]=this.value">`:''}</div>`; }).join('')}</div>
+    <button class="btn gold" onclick="submitRanking('${x.id}')">Lock in my top 3</button></section>`;
+}
+function pick(qid,i,e){ const d=ui['d-'+qid]; const was=d.picks.indexOf(e); if(was>=0){ d.picks[was]=null; d.why[was]=''; } d.picks[i]= was===i?null:e; render(); }
+function submitRanking(qid){
+  const d=ui['d-'+qid], need=Math.min(3,answersFor(qid).length);
+  if(d.picks.filter(Boolean).length<need) return toast(`Pick your top ${need} first`);
+  S.rankings[qid]={picks:[...d.picks],why:[...d.why],t:now()}; commit(); toast('Locked in');
+}
+
+/* ============================================================
+   CFO
+   ============================================================ */
+function cfoView(){
+  return ({tasks:cfoTasks,live:cfoLive,gossip:cfoGossip,miracles:cfoMiracles,reindeer:cfoReindeer,activity:cfoActivity,results:cfoResults,setup:cfoSetup}[tab]||cfoLive)();
+}
+function cfoLive(){
+  const R=scores(now());
+  return `<section class="card pine"><div class="eyebrow" style="color:var(--gold)">CFO eyes only</div><h1 class="h">Live standings</h1><p class="sub" style="color:#CFE3DA">${phaseLabel()} · clock ${fmt(now())}</p></section>
+  <section class="grid2">${R.groups.map((g,i)=>`<div class="stat"><div class="l"><span class="gdot" style="background:${g.color}"></span>${i+1}. ${esc(g.name)}</div><div class="n" style="margin-top:6px">${g.total}</div></div>`).join('')}</section>
+  <section class="card"><div class="scroll"><table class="t"><thead><tr><th>#</th><th>Elf</th><th>Group</th><th style="text-align:right">Nice pts</th><th>Rival</th><th>Own</th><th>Kitchen</th><th>Miracle</th></tr></thead><tbody>
+  ${R.rank.map((id,i)=>{ const e=elf(id), m=S.miracles[id];
+    return `<tr><td class="num">${i+1}</td><td><b>${esc(e.name)}</b></td><td><span class="gdot" style="background:${grp(e.group).color}"></span>${grp(e.group).short}</td><td class="num"><b>${R.sc[id]}</b></td>
+      <td class="num">${used(e,'rival').length}/${L.rival}</td><td class="num">${used(e,'own').length}/${L.own}</td><td class="num">${CONFIG.questions.filter(x=>S.answers[id]?.[x.id]).length}/4</td>
+      <td>${m?`<span class="pill ${m.status==='approved'?'p-nice':m.status==='claimed'?'p-gold':'p-mute'}">${m.status}</span>`:''}</td></tr>`; }).join('')}
+  </tbody></table></div><p class="hint" style="margin:0">Ties go to whoever reached their score first. Floor ${P.floor}; Xmas Miracle triggers below ${P.miracleTrigger} until ${fmt(T('miracleCutoff'))}.</p></section>`;
+}
+function cfoGossip(){
+  const pend=S.gossip.filter(g=>g.status==='pending').sort((a,b)=>a.t-b.t), rest=S.gossip.filter(g=>g.status!=='pending').sort((a,b)=>b.t-a.t);
+  return `<section class="card"><h1 class="h">Gossip to vet</h1><p class="sub">Approved gossip appears on every elf’s feed, anonymously.</p>
+    ${pend.length?`<div class="list">${pend.map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">From ${esc(elf(g.from).name)} · ${fmt(g.t)}</span>
+      <div class="row"><button class="btn sm" onclick="vet('${g.id}','approved')">Approve</button><button class="btn sm ghost" onclick="vet('${g.id}','rejected')">Reject</button></div></div>`).join('')}</div>`:`<div class="empty">Nothing waiting.</div>`}</section>
+  <section class="card"><h2 class="h" style="font-size:19px">Already vetted</h2>${rest.length?`<div class="list">${rest.map(g=>`<div class="item"><q>${esc(g.text)}</q><span class="meta">${esc(elf(g.from).name)} · ${g.status} · ${fmt(g.t)}</span></div>`).join('')}</div>`:`<div class="empty">None yet.</div>`}</section>`;
+}
+function vet(id,st){ const g=S.gossip.find(x=>x.id===id); g.status=st; if(st==='approved') g.approvedT=now(); commit(); toast(st==='approved'?'On the feed':'Rejected'); }
+function cfoTasks(){
+  return `<section class="card"><h1 class="h">Group tasks</h1><p class="sub">Pick the winning group for each task. Every elf in that group gets +${P.group}.</p></section>
+  ${CONFIG.groupTasks.map((name,k)=>{ const g=S.groupTasks?.[k];
+    return `<section class="card"><h2 class="h" style="font-size:19px">${esc(name)}</h2>
+      <div class="chips">${CONFIG.groups.map(x=>`<button class="chip" aria-pressed="${g?.group===x.id}" onclick="awardTask(${k},'${x.id}')"><span class="gdot" style="background:${x.color}"></span>${esc(x.name)}</button>`).join('')}</div>
+      ${g?`<div class="row"><span class="pill p-nice">Won by ${esc(grp(g.group).name)} · ${fmt(g.t)}</span><button class="btn sm ghost" onclick="awardTask(${k},null)">Clear</button></div>`:'<span class="hint">Not judged yet</span>'}</section>`; }).join('')}`;
+}
+function awardTask(k,gid){ S.groupTasks ||= {}; if(!gid) delete S.groupTasks[k]; else S.groupTasks[k]={group:gid,t:now()}; commit(); toast(gid?`${grp(gid).name} win it`:'Cleared'); }
+function cfoMiracles(){
+  const list=Object.entries(S.miracles).sort((a,b)=>a[1].t-b[1].t);
+  return `<section class="card"><h1 class="h">Xmas Miracles</h1><p class="sub">Sent automatically when an elf drops below ${P.miracleTrigger}, until ${fmt(T('miracleCutoff'))}. Check the evidence in person, then approve here.</p>
+    ${list.length?`<div class="list">${list.map(([id,m])=>{ const ms=CONFIG.missions[m.mission];
+      return `<div class="item"><span><b>${esc(elf(id).name)}</b> <span class="pill ${m.status==='approved'?'p-nice':m.status==='claimed'?'p-gold':m.status==='rejected'?'p-bad':'p-mute'}">${m.status==='assigned'?'In progress':m.status==='claimed'?'Says done: check evidence':m.status}</span></span>
+        <span>${esc(ms.text)} <span class="hint">· ${esc(ms.evidence)}</span></span><span class="meta">Triggered ${fmt(m.t)}${m.approvedT?` · approved ${fmt(m.approvedT)}`:''}</span>
+        ${m.status==='claimed'?`<div class="row"><button class="btn sm" onclick="judgeMiracle('${id}',true)">Approve +${P.miracle}</button><button class="btn sm ghost" onclick="judgeMiracle('${id}',false)">Reject</button></div>`:''}</div>`; }).join('')}</div>`:`<div class="empty">No elf has dropped below ${P.miracleTrigger} yet.</div>`}</section>`;
+}
+function judgeMiracle(id,ok){ const m=S.miracles[id]; m.status=ok?'approved':'rejected'; if(ok) m.approvedT=now(); commit(); toast(ok?`+${P.miracle} logged`:'Rejected'); }
+function cfoReindeer(){
+  const r=CONFIG.reindeer.find(x=>x.name===ui.rd), num=+ui.num, match=CONFIG.elves.find(e=>S.cardNumbers[e.id]===num);
+  return `<section class="card"><h1 class="h">The Reindeer</h1><p class="sub">Write these numbers on both sets of cards. A Reindeer taps a card, you log it here. Done by ${fmt(T('reindeerBy'))}.</p>
+    <div class="grid2">${CONFIG.elves.map(e=>`<div class="stat"><div class="cardnum">${S.cardNumbers[e.id]}</div><div class="l">${esc(e.name)} · ${grp(e.group).short}</div></div>`).join('')}</div></section>
+  <section class="card"><h2 class="h" style="font-size:19px">Log a tap</h2>
+    <div><span class="lab">Which Reindeer?</span><div class="chips">${CONFIG.reindeer.map(x=>`<button class="chip" aria-pressed="${ui.rd===x.name}" onclick="ui.rd='${x.name}';render()">${x.name} <span class="hint">· ${x.type}</span></button>`).join('')}</div></div>
+    <div><label class="lab" for="cardno">Card number tapped</label><input type="number" id="cardno" inputmode="numeric" value="${esc(ui.num||'')}" oninput="ui.num=this.value;document.getElementById('match').innerHTML=matchText()"></div>
+    <div id="match">${matchText()}</div>
+    <button class="btn ${r?.type==='bite'?'berry':''}" onclick="logTap()">Log tap</button></section>
+  <section class="card"><h2 class="h" style="font-size:19px">Taps so far</h2>${S.taps.length?`<div class="list">${S.taps.map(x=>`<div class="item"><span><b>${esc(x.reindeer)}</b> ${x.type==='vouch'?`<span class="pill p-nice">vouched +${P.reindeer}</span>`:`<span class="pill p-bad">bit −${P.reindeer}</span>`} <b>${esc(elf(x.elf).name)}</b></span><span class="meta">${fmt(x.t)} · card ${S.cardNumbers[x.elf]} <button class="btn sm ghost" style="margin-left:6px" onclick="undoTap('${x.id}')">Undo</button></span></div>`).join('')}</div>`:`<div class="empty">No taps yet.</div>`}</section>`;
+}
+function matchText(){ const num=+ui.num, e=CONFIG.elves.find(x=>S.cardNumbers[x.id]===num); return ui.num? (e?`<span class="pill p-gold">Card ${num} = ${esc(e.name)} (${grp(e.group).short})</span>`:`<span class="pill p-bad">No elf has card ${esc(ui.num)}</span>`) : ''; }
+function logTap(){
+  const r=CONFIG.reindeer.find(x=>x.name===ui.rd), e=CONFIG.elves.find(x=>S.cardNumbers[x.id]===+ui.num);
+  if(!r) return toast('Pick a Reindeer'); if(!e) return toast('Enter a valid card number');
+  S.taps.push({id:uid(),reindeer:r.name,type:r.type,elf:e.id,t:now()}); ui={}; commit(); toast(`${r.name} ${r.type==='vouch'?'vouched for':'bit'} ${e.name}`);
+}
+function undoTap(id){ S.taps=S.taps.filter(x=>x.id!==id); commit(); toast('Tap removed'); }
+function activity(){
+  const a=[];
+  S.reports.forEach(r=>a.push({t:r.t,html:`<b>${esc(elf(r.from).name)}</b> reported <b>${esc(elf(r.to).name)}</b> <span class="pill ${r.type==='own'?'p-gold':'p-bad'}">${r.type==='own'?'own group':'rival'}</span> <q>${esc(r.reason)}</q>`}));
+  S.gossip.forEach(g=>a.push({t:g.t,html:`<b>${esc(elf(g.from).name)}</b> posted gossip <q>${esc(g.text)}</q> <span class="pill p-mute">${g.status}</span>`}));
+  Object.entries(S.answers).forEach(([e,o])=>Object.entries(o).forEach(([qid,x])=>a.push({t:x.t,html:`<b>${esc(elf(e).name)}</b> answered “${esc(q(qid).text)}”`})));
+  Object.entries(S.rankings).forEach(([qid,r])=>a.push({t:r.t,html:`<b>${esc(chef(q(qid).chef).short)}</b> ranked “${esc(q(qid).text)}”`}));
+  Object.entries(S.groupTasks||{}).forEach(([k,g])=>a.push({t:g.t,html:`<b>${esc(grp(g.group).name)}</b> won ${esc(CONFIG.groupTasks[k])}`}));
+  S.taps.forEach(x=>a.push({t:x.t,html:`<b>${esc(x.reindeer)}</b> ${x.type==='vouch'?'vouched for':'bit'} <b>${esc(elf(x.elf).name)}</b>`}));
+  Object.entries(S.miracles).forEach(([e,m])=>{ a.push({t:m.t,html:`Xmas Miracle sent to <b>${esc(elf(e).name)}</b>`}); if(m.approvedT) a.push({t:m.approvedT,html:`Xmas Miracle approved for <b>${esc(elf(e).name)}</b>`}); });
+  return a.sort((x,y)=>y.t-x.t);
+}
+function cfoActivity(){ const a=activity(); return `<section class="card"><h1 class="h">Everything, as it happened</h1>${a.length?`<div class="list">${a.map(x=>`<div class="item"><span>${x.html}</span><span class="meta">${fmt(x.t)}</span></div>`).join('')}</div>`:`<div class="empty">Nothing yet.</div>`}</section>`; }
+function cfoResults(){
+  const R=scores(now()), closed=now()>=T('close');
+  const unranked=CONFIG.questions.filter(x=>!S.rankings[x.id]);
+  return `<section class="card pine"><div class="eyebrow" style="color:var(--gold)">8pm</div><h1 class="h">The results deck</h1>
+    <p class="sub" style="color:#CFE3DA">One click builds an editable PowerPoint from the game data: reports and reasons, Kitchen winners, Reindeer, Miracles, the weekend race, the Winning Group and the Head Elf. Speaker notes included for your narration.</p></section>
+  ${!closed?`<div class="lock"><span>The workshop is still open (closes ${fmt(T('close'))}). You can build a preview deck now; build the final one after it closes.</span></div>`:''}
+  ${unranked.length?`<div class="lock"><span>Still waiting on chef rankings for ${unranked.length} question${unranked.length>1?'s':''}.</span></div>`:''}
+  <section class="card"><div class="grid2">
+    <div class="stat"><div class="l">Winning Group (so far)</div><div class="n" style="margin-top:6px;font-size:20px">${esc(R.groups[0].name)}</div></div>
+    <div class="stat"><div class="l">Head Elf (so far)</div><div class="n" style="margin-top:6px;font-size:20px">${esc(elf(R.rank[0]).name)} · ${R.sc[R.rank[0]]}</div></div></div>
+    <button class="btn gold wide" id="deckbtn" onclick="exportDeck()">Download results deck (.pptx)</button>
+    <button class="btn ghost wide" onclick="exportData()">Download raw game data (.json)</button></section>`;
+}
+function cfoSetup(){
+  const base=location.href.split('#')[0];
+  const link=(label,tok)=>`<div class="item"><b>${esc(label)}</b><span class="meta" style="word-break:break-all">${esc(base)}#${tok}</span></div>`;
+  const presets=[['open','-5','Before it opens'],['open','15','Fri 8:15pm'],['open','180','Fri 11pm'],['kitchenClose','-60','Sat 9am'],['kitchenClose','30','Sat 10:30am'],['chefRankBy','30','Sat 12:30pm'],['close','30','Sat 6:30pm (closed)']];
+  return `<section class="card"><h1 class="h">Personal links</h1><p class="sub">In the live version each person gets only their own link. Nobody needs a password.</p>
+    <div class="list">${link('CFO control room (Jack & Nathan)',CONFIG.cfoToken)}${CONFIG.chefs.map(c=>link('Chef: '+c.name,c.token)).join('')}${CONFIG.elves.map(e=>link(e.name+' · '+grp(e.group).short,e.token)).join('')}</div></section>
+  ${DEMO?`<section class="card"><h2 class="h" style="font-size:19px">Demo tools</h2><p class="sub" style="margin:0">Move the clock to test each stage, or fill the game with a made-up weekend to see the results deck.</p>
+    <div><span class="lab">Set the clock</span><div class="chips">${presets.map(([k,m,l])=>`<button class="chip" onclick="S.demoClock=T('${k}')+(${m})*60000;commit();toast('Clock: ${l}')">${l}</button>`).join('')}</div></div>
+    <div class="row"><button class="btn" onclick="simulate()">Simulate a full weekend</button><button class="btn ghost" onclick="if(ui.reset){S=blank();S.cardNumbers=makeCardNumbers();commit();toast('Game reset')}else{ui.reset=1;render()}">${ui.reset?'Tap again to wipe everything':'Reset game'}</button></div></section>`:''}`;
+}
+
+/* ---------- downloads ---------- */
+async function offerFile(name, blob){
+  try { const d = window.claude?.use ? await window.claude.use('downloads') : null;
+    if(d){ await d.save({filename:name,data:blob}); toast('Downloaded'); return; } } catch(e){ if(e?.code==='declined') return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function exportData(){ offerFile('naughty-or-nice-data.json', new Blob([JSON.stringify({config:CONFIG,state:S},null,2)],{type:'application/json'})); }
+
+/* ============================================================
+   DEMO SIMULATION
+   ============================================================ */
+function simulate(){
+  let seed=Date.now()%100000; const rnd=()=>(seed=(seed*9301+49297)%233280)/233280; const pickR=a=>a[Math.floor(rnd()*a.length)];
+  const between=(a,b)=>Math.round(a+rnd()*(b-a));
+  const awake=(a,b)=>{ for(let k=0;k<50;k++){ const t=between(a,b), h=new Date(t).getHours(); if(h>=8||h<1) return t; } return between(a,b); };
+  const reasons=['Didn’t pass me the salt','Breathing too loudly during the film','Took the last pig in blanket','Laughed at their own joke. Twice.','Hogged the good end of the sofa','Wore a better jumper than me','Said “honestly” fourteen times','Suspiciously nice all morning','Ate my crisps','Skipped their round','Played Mariah before 10am','Took the purple one from the Quality Street','Asked who the chefs are','Fell asleep at 9:40pm','Claimed the shower for 25 minutes','Whispered to a Reindeer','Knows too much','Made the tea too weak'];
+  const gossip=['Heard Kim is planning to report her own team','Someone’s been very generous with the prosecco. Suspicious.','Grotto Gremlins have a pact. Trust no one.','Turk was seen whispering to a Reindeer','SBS are going after Pete tonight','A certain elf answered the golf question with a diagram','Lauren hasn’t filed a single report. Yet.','Johnson asked who the chefs are. Twice.','Hannah is far too relaxed for someone being reported'];
+  const bank={
+    q1:['Scallops, beef wellington, sticky toffee pudding','Prawn cocktail, Sunday roast, Viennetta. Retro night.','Burrata, lamb rump, tiramisu','Soup, more soup, cheese board','Gyoza, katsu curry, mochi','Smoked salmon blinis, duck breast, chocolate fondant','Nachos. Nachos. Nachos.','Caesar salad, steak frites, crème brûlée','Pâté, coq au vin, lemon tart'],
+    q2:['Grip it and rip it','Slow back, pause at the top, then commit','Head still, hips lead, finish tall','Pretend no one is watching. Everyone is watching.','Think pendulum, not lumberjack','Smooth tempo and let the club do the work','Tee it high and let it fly','Shoulders turn, weight shifts, eyes on the ball','Close eyes, pray, swing'],
+    q3:['Every single glen','Irn-Bru as a food group','Whisky by a fire','Edinburgh at Christmas','Haggis, neeps and tatties','The people, and the accents','Golf where it was invented','The midges. Kidding. The lochs.','Hogmanay'],
+    q4:['Move house in one trip','Tip run. Finally.','Drive to the coast with a sofa in the back','Tailgate BBQ at the football','Help every mate move flat in one day','Buy a Christmas tree that’s far too big','Pretend I live in Texas','Take the kids to the farm','Garden centre trolley dash'],
+  };
+  const why=['Made me laugh out loud','Most creative','I’d genuinely eat this','Bold choice','Short and sweet','Respect','I want to be there'];
+  S=blank(); S.cardNumbers=makeCardNumbers();
+  const o=T('open'), c=T('close');
+  // answers: Fri night / Sat morning
+  const off={}; CONFIG.questions.forEach(x=>off[x.id]=Math.floor(rnd()*9));
+  CONFIG.elves.forEach((e,i)=>{ S.answers[e.id]={}; CONFIG.questions.forEach(x=>{ if(rnd()<.92) S.answers[e.id][x.id]={text:bank[x.id][(i+off[x.id])%9],t:awake(o+10*60000,T('kitchenClose')-20*60000)}; }); });
+  // reports spread across window
+  CONFIG.elves.forEach(e=>{
+    const rivals=CONFIG.elves.filter(x=>x.group!==e.group), mates=CONFIG.elves.filter(x=>x.group===e.group&&x.id!==e.id);
+    const nr=between(1,3), no=between(0,3); const ownCount={};
+    for(let k=0;k<nr;k++) S.reports.push({id:uid(),type:'rival',from:e.id,to:pickR(rivals).id,reason:pickR(reasons),t:awake(o+20*60000,c-30*60000)});
+    for(let k=0;k<no;k++){ const t=pickR(mates); if((ownCount[t.id]||0)>=2) continue; ownCount[t.id]=(ownCount[t.id]||0)+1; S.reports.push({id:uid(),type:'own',from:e.id,to:t.id,reason:pickR(reasons),t:awake(o+40*60000,c-20*60000)}); }
+  });
+  // gossip
+  gossip.forEach((g,i)=>{ const t=awake(o+30*60000,c-60*60000); S.gossip.push({id:uid(),from:pickR(CONFIG.elves).id,text:g,t,status:i===2||i===6?'rejected':'approved',approvedT:t+between(5,40)*60000}); });
+  // group tasks
+  CONFIG.groupTasks.forEach((_,k)=>{ S.groupTasks[k]={group:pickR(CONFIG.groups).id,t:awake(o+60*60000,c-30*60000)}; });
+  // reindeer
+  CONFIG.reindeer.forEach(r=>S.taps.push({id:uid(),reindeer:r.name,type:r.type,elf:pickR(CONFIG.elves).id,t:between(T('kitchenClose')+5*60000,T('reindeerBy')-5*60000)}));
+  // rankings
+  CONFIG.questions.forEach(x=>{ const ans=answersFor(x.id).map(a=>a.elf); const p=[]; while(p.length<3&&p.length<ans.length){ const e=pickR(ans); if(!p.includes(e)) p.push(e);} S.rankings[x.id]={picks:p,why:p.map(()=>pickR(why)),t:between(T('kitchenClose')+40*60000,T('chefRankBy')-10*60000)}; });
+  // miracles
+  S.demoClock=c+30*60000; checkMiracles();
+  Object.values(S.miracles).forEach(m=>{ if(rnd()<.75){ m.status='approved'; m.claimedT=Math.min(m.t+between(30,120)*60000,c-10*60000); m.approvedT=m.claimedT+5*60000; } });
+  checkMiracles(); persist(); tab='live'; persona={role:'cfo'}; render(); toast('Simulated a full weekend');
+}
+
+async function exportDeck(){
+  if(typeof PptxGenJS==='undefined') return toast('Deck builder didn’t load. Check your connection.');
+  const btn=$('#deckbtn'); if(btn){ btn.disabled=true; btn.textContent='Building deck…'; }
+  try { const blob = await buildDeck(); await offerFile(`Naughty-or-Nice-Results-${CONFIG.year}.pptx`, blob); }
+  catch(e){ console.error(e); toast('Couldn’t build the deck'); }
+  if(btn){ btn.disabled=false; btn.textContent='Download results deck (.pptx)'; }
+}
+
+/* ============================================================
+   RESULTS DECK (PptxGenJS, editable) — v2
+   ============================================================ */
+const ART_SVG = {
+  hat:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M40 150 C60 90 95 40 150 45 C170 48 178 70 165 80 C140 70 120 100 130 150 Z" fill="#B4213D"/><circle cx="170" cy="72" r="18" fill="#FFFFFF"/><rect x="25" y="140" width="125" height="34" rx="17" fill="#FFFFFF"/><path d="M60 115 l6 -14 6 14 -14 -8 h16z" fill="#D8A23A"/></svg>`,
+  crown:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M30 150 L22 62 L66 100 L100 45 L134 100 L178 62 L170 150 Z" fill="#D8A23A"/><rect x="30" y="148" width="140" height="22" rx="6" fill="#B8862A"/><circle cx="22" cy="58" r="11" fill="#D8A23A"/><circle cx="100" cy="40" r="12" fill="#D8A23A"/><circle cx="178" cy="58" r="11" fill="#D8A23A"/><circle cx="100" cy="118" r="11" fill="#B4213D"/><circle cx="62" cy="126" r="7" fill="#1F7A4D"/><circle cx="138" cy="126" r="7" fill="#1F7A4D"/></svg>`,
+  dagger:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><g transform="rotate(-40 100 100)"><path d="M92 20 L108 20 L112 120 L100 140 L88 120 Z" fill="#D9E2DF"/><path d="M100 20 L100 138" stroke="#AFC0BA" stroke-width="3"/><rect x="62" y="118" width="76" height="14" rx="7" fill="#D8A23A"/><rect x="91" y="132" width="18" height="44" rx="6" fill="#6B3E1E"/><circle cx="100" cy="182" r="9" fill="#D8A23A"/></g><path d="M58 70 q6 14 0 22 q-6 -8 0 -22z" fill="#B4213D"/><path d="M45 92 q5 11 0 17 q-5 -6 0 -17z" fill="#B4213D"/></svg>`,
+  chef:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><circle cx="65" cy="85" r="34" fill="#FFFFFF"/><circle cx="100" cy="65" r="40" fill="#FFFFFF"/><circle cx="137" cy="85" r="34" fill="#FFFFFF"/><rect x="58" y="88" width="84" height="62" fill="#FFFFFF"/><rect x="54" y="140" width="92" height="26" rx="6" fill="#EAF2EF"/><path d="M80 112 v28 M100 108 v32 M120 112 v28" stroke="#C9D8D2" stroke-width="5" stroke-linecap="round"/></svg>`,
+  halo:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><ellipse cx="100" cy="30" rx="44" ry="11" fill="none" stroke="#D8A23A" stroke-width="8"/><path d="M62 70 L44 36 M50 52 L32 48 M138 70 L156 36 M150 52 L168 48" stroke="#8A5A12" stroke-width="9" stroke-linecap="round"/><ellipse cx="100" cy="112" rx="50" ry="58" fill="#A0703C"/><ellipse cx="100" cy="148" rx="30" ry="22" fill="#D9B48A"/><circle cx="80" cy="100" r="8" fill="#12241E"/><circle cx="120" cy="100" r="8" fill="#12241E"/><circle cx="100" cy="136" r="13" fill="#B4213D"/><path d="M86 158 q14 10 28 0" stroke="#12241E" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`,
+  fangs:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M62 70 L44 36 M50 52 L32 48 M138 70 L156 36 M150 52 L168 48" stroke="#8A5A12" stroke-width="9" stroke-linecap="round"/><ellipse cx="100" cy="112" rx="50" ry="58" fill="#A0703C"/><ellipse cx="100" cy="150" rx="32" ry="24" fill="#D9B48A"/><path d="M70 92 l20 8 M130 92 l-20 8" stroke="#12241E" stroke-width="6" stroke-linecap="round"/><circle cx="82" cy="106" r="7" fill="#12241E"/><circle cx="118" cy="106" r="7" fill="#12241E"/><circle cx="100" cy="134" r="12" fill="#B4213D"/><path d="M78 152 h44 v6 q-22 14 -44 0z" fill="#12241E"/><path d="M84 152 l5 14 5 -14z M106 152 l5 14 5 -14z" fill="#FFFFFF"/></svg>`,
+  gift:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect x="40" y="88" width="120" height="86" rx="6" fill="#B4213D"/><rect x="32" y="70" width="136" height="26" rx="6" fill="#C9354F"/><rect x="92" y="70" width="16" height="104" fill="#D8A23A"/><path d="M100 70 C80 40 52 48 66 66 C72 72 88 72 100 70 C112 72 128 72 134 66 C148 48 120 40 100 70Z" fill="#D8A23A"/><path d="M160 30 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5z M36 36 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z" fill="#D8A23A"/></svg>`,
+  trophy:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M55 30 H145 V80 C145 112 125 128 100 128 C75 128 55 112 55 80 Z" fill="#D8A23A"/><path d="M55 44 H30 C30 80 46 92 62 94 M145 44 H170 C170 80 154 92 138 94" stroke="#D8A23A" stroke-width="10" fill="none"/><rect x="90" y="126" width="20" height="26" fill="#B8862A"/><rect x="62" y="150" width="76" height="24" rx="5" fill="#10392C"/><path d="M100 52 l7 14 15 2 -11 10 3 15 -14 -7 -14 7 3 -15 -11 -10 15 -2z" fill="#FBF0D9"/></svg>`,
+  clock:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><circle cx="100" cy="108" r="70" fill="#FFFFFF" stroke="#D8A23A" stroke-width="10"/><path d="M100 108 V62 M100 108 L132 126" stroke="#10392C" stroke-width="10" stroke-linecap="round"/><circle cx="100" cy="108" r="8" fill="#B4213D"/><rect x="88" y="22" width="24" height="16" rx="4" fill="#D8A23A"/></svg>`,
+  snow:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><g stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" fill="none"><path d="M100 20 V180 M30 60 L170 140 M30 140 L170 60"/><path d="M85 35 L100 50 L115 35 M85 165 L100 150 L115 165 M38 80 L58 72 L50 52 M162 120 L142 128 L150 148 M38 120 L58 128 L50 148 M162 80 L142 72 L150 52"/></g></svg>`,
+};
+function svgPng(svg, px=600){
+  return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>{ const c=document.createElement('canvas'); c.width=px; c.height=px; c.getContext('2d').drawImage(img,0,0,px,px); res(c.toDataURL('image/png')); };
+    img.onerror=rej; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); });
+}
+
+/* ---------- storylines from the data ---------- */
+function leaderAt(hist,i){ const s=hist[i].s; return CONFIG.elves.map(e=>e.id).sort((a,b)=>s[b]-s[a])[0]; }
+function insights(R){
+  const out=[];
+  const own=S.reports.filter(r=>r.type==='own'), rival=S.reports.filter(r=>r.type==='rival');
+  const stabbers=new Set(own.map(r=>r.from)).size, n=CONFIG.elves.length;
+  out.push({big: stabbers===n?'ALL':`${stabbers} of ${n}`, text: stabbers===n?`of you stabbed your own group in the back to get ahead.`:`elves stabbed their own group in the back to get ahead.`, tone:'bad'});
+  // reign
+  const reign={}; let changes=0, prev=null;
+  for(let i=0;i<R.hist.length;i++){ const h=R.hist[i], nxt=R.hist[i+1]; const t1=Math.min(nxt?nxt.t:T('close'),T('close')); const L=leaderAt(R.hist,i);
+    if(prev && L!==prev && h.t>T('open')) changes++; prev=L; reign[L]=(reign[L]||0)+Math.max(0,t1-h.t); }
+  const longest=Object.entries(reign).sort((a,b)=>b[1]-a[1])[0];
+  if(longest && longest[0]!==R.rank[0]) out.push({big:`${Math.round(longest[1]/36e5)} hrs`, text:`${elf(longest[0]).name} sat on top of the pile for longest… and still lost the crown.`, tone:'gold'});
+  out.push({big:String(changes), text:`times the top spot changed hands.`, tone:'gold'});
+  // biggest fall
+  let fall={id:null,d:0};
+  CONFIG.elves.forEach(e=>{ let peak=-1; R.hist.forEach(h=>{ peak=Math.max(peak,h.s[e.id]); const d=peak-h.s[e.id]; if(d>fall.d) fall={id:e.id,d}; }); });
+  if(fall.id) out.push({big:`−${fall.d}`, text:`${elf(fall.id).name}’s biggest fall from their peak. Ouch.`, tone:'bad'});
+  // most wanted
+  const recv=CONFIG.elves.map(e=>({e,n:S.reports.filter(r=>r.to===e.id).length})).sort((a,b)=>b.n-a.n);
+  if(recv[0]?.n) out.push({big:String(recv[0].n), text:`Naughty reports landed on ${recv[0].e.name}. More than anyone.`, tone:'bad'});
+  // most stabbed by own
+  const ownRecv=CONFIG.elves.map(e=>({e,n:own.filter(r=>r.to===e.id).length})).sort((a,b)=>b.n-a.n);
+  if(ownRecv[0]?.n>1) out.push({big:String(ownRecv[0].n), text:`times ${ownRecv[0].e.name} was knifed by their own group.`, tone:'bad'});
+  const m=Object.values(S.miracles); out.push({big:`${m.length}`, text:`elves needed an Xmas Miracle. ${m.filter(x=>x.status==='approved').length} pulled it off.`, tone:'nice'});
+  const gb=S.gossip.filter(g=>g.status==='rejected').length; out.push({big:String(S.gossip.filter(g=>g.status==='approved').length), text:`bits of gossip made the feed. ${gb} ${gb===1?'was':'were'} too much even for the CFOs.`, tone:'gold'});
+  out.push({big:String(rival.length+own.length), text:`Naughty reports filed in ${Math.round((T('close')-T('open'))/36e5)} hours.`, tone:'bad'});
+  return out.slice(0,6);
+}
+const KIND={rival:'rival reports',own:'own group reports',kitchen:'Santa’s Kitchen',vouch:'Reindeer vouches',bite:'Reindeer bites',miracle:'Xmas Miracles',group:'group tasks'};
+const THEMES=[
+  ['Greedy',/\b(ate|eat|took|take|last|stole|steal|hog|crisps?|pie|quality street|purple|food|snack|seconds|biscuit|chocolate)/i],
+  ['Loud',/(loud|breath|snor|shout|sing|noise|yell|laugh)/i],
+  ['Lazy',/(asleep|sleep|lazy|nap|bed|skipped|never helped|sofa)/i],
+  ['Tight',/(round|tight|stingy|pay|paid)/i],
+  ['Sneaky',/(whisper|knows too much|plot|sneak|suspicious|spy|chefs?|reindeer|secret)/i],
+  ['Smug',/(better|smug|show.?off|nice|perfect|jumper|outfit)/i],
+  ['Rude',/(rude|pass|ignor|interrupt|weak|tea|shower|queue)/i],
+  ['Annoying',/(honestly|joke|mariah|annoy|talk|said|kept|always|again)/i],
+];
+const themeOf=r=>(THEMES.find(([,re])=>re.test(r))||['Just petty'])[0];
+function themeSummary(list){ const c={}; list.forEach(r=>{ const t=themeOf(r.reason); c[t]=(c[t]||0)+1; }); return Object.entries(c).sort((a,b)=>b[1]-a[1]); }
+function segmentStory(R,a,b){
+  const d={}, why={}; CONFIG.elves.forEach(e=>{ d[e.id]=0; why[e.id]={}; });
+  R.applied.filter(x=>x.t>a&&x.t<=b).forEach(x=>Object.entries(x.fx).forEach(([id,v])=>{ if(!v) return; d[id]+=v; const k=x.kind==='own'&&id===x.from?'stealing from their own group':KIND[x.kind]; why[id][k]=(why[id][k]||0)+v; }));
+  const desc=id=>Object.entries(why[id]).sort((p,q)=>Math.abs(q[1])-Math.abs(p[1])).slice(0,2).map(([k,v])=>`${v>0?'+':'−'}${Math.abs(v)} ${k}`).join(', ');
+  const ids=CONFIG.elves.map(e=>e.id);
+  const up=[...ids].sort((p,q)=>d[q]-d[p])[0], down=[...ids].sort((p,q)=>d[p]-d[q])[0];
+  const lines=[];
+  if(d[up]>0) lines.push({t:`${elf(up).name} climbed ${d[up]}`,s:desc(up),tone:'nice'});
+  if(d[down]<0) lines.push({t:`${elf(down).name} fell ${-d[down]}`,s:desc(down),tone:'bad'});
+  return lines;
+}
+
+async function buildDeck(){
+  const C={pine:'10392C',pine2:'1B5442',snow:'FFFFFF',frost:'EAF2EF',ink:'12241E',muted:'56685F',berry:'B4213D',berrySoft:'F8E3E7',nice:'1F7A4D',niceSoft:'DFF1E6',gold:'D8A23A',goldSoft:'FBF0D9',mint:'CFE3DA'};
+  const HF='Arial Black', BF='Arial';
+  const ART={}; for(const [k,v] of Object.entries(ART_SVG)) ART[k]=await svgPng(v);
+  const R=scores(Infinity);
+  const pptx=new PptxGenJS(); pptx.layout='LAYOUT_WIDE'; pptx.title='Naughty or Nice: The Results';
+  const gcol=id=>grp(id).color.replace('#','');
+  const art=(s,k,x,y,w)=>s.addImage({data:ART[k],x,y,w,h:w});
+  const head=(s,eyebrow,title,o={})=>{ s.background={color:o.dark?C.pine:C.snow};
+    if(eyebrow) s.addText(eyebrow.toUpperCase(),{x:.6,y:.35,w:10,h:.35,fontFace:BF,fontSize:12,bold:true,color:o.dark?C.gold:C.berry,charSpacing:4});
+    s.addText(title,{x:.6,y:.65,w:o.w||12.1,h:.9,fontFace:HF,fontSize:o.size||32,color:o.dark?C.snow:C.pine,valign:'top',fit:'shrink'}); };
+  const divider=(eyebrow,title,sub,artKey,notes)=>{ const s=pptx.addSlide(); s.background={color:C.pine};
+    s.addText(eyebrow.toUpperCase(),{x:.8,y:2.3,w:8,h:.4,fontFace:BF,fontSize:14,bold:true,color:C.gold,charSpacing:5});
+    s.addText(title,{x:.8,y:2.75,w:8.2,h:1.5,fontFace:HF,fontSize:50,color:C.snow,valign:'top',fit:'shrink'});
+    if(sub) s.addText(sub,{x:.8,y:4.3,w:8,h:.9,fontFace:BF,fontSize:20,color:C.mint,valign:'top'});
+    if(artKey) art(s,artKey,9.2,1.6,3.6);
+    if(notes) s.addNotes(notes); return s; };
+  const card=(s,x,y,w,h,fill,line)=>s.addShape(pptx.ShapeType.roundRect,{x,y,w,h,fill:{color:fill},line:{color:line||fill,width:1.5},rectRadius:.12});
+  const cell=(text,o={})=>({text:String(text),options:{fontFace:BF,fontSize:14,color:C.ink,valign:'middle',margin:[4,8,4,8],...o}});
+  const hcell=t=>cell(t,{bold:true,fontSize:11,color:C.muted,fill:{color:C.frost}});
+  const tone=t=>t==='bad'?[C.berrySoft,C.berry]:t==='nice'?[C.niceSoft,C.nice]:[C.goldSoft,'8A5A12'];
+  let s;
+
+  /* 1. Title */
+  s=pptx.addSlide(); s.background={color:C.pine};
+  s.addText('FRIENDMAS '+CONFIG.year,{x:.8,y:1.6,w:8,h:.4,fontFace:BF,fontSize:16,bold:true,color:C.gold,charSpacing:6});
+  s.addText('Naughty or Nice',{x:.8,y:2.05,w:8.6,h:1.5,fontFace:HF,fontSize:64,color:C.snow,fit:'shrink'});
+  s.addText('The Results',{x:.8,y:3.55,w:8,h:.9,fontFace:HF,fontSize:36,color:C.gold});
+  s.addText('Presented by the Chief Fun Officers of the North Pole',{x:.8,y:4.6,w:8.5,h:.5,fontFace:BF,fontSize:18,color:C.mint});
+  art(s,'hat',9.3,1.5,3.6);
+  s.addNotes('Welcome everyone. Santa is tired, and tonight we find out which group takes over Christmas, and who becomes Head Elf. Nobody has seen a single score yet.');
+
+  /* 2. What really happened */
+  s=pptx.addSlide(); head(s,'Before we begin','What really happened this weekend');
+  insights(R).forEach((it,i)=>{ const x=.6+(i%3)*4.1, y=1.8+Math.floor(i/3)*2.65; const [bg,fg]=tone(it.tone);
+    card(s,x,y,3.85,2.4,bg);
+    s.addText(it.big,{x:x+.3,y:y+.2,w:3.3,h:1,fontFace:HF,fontSize:44,color:fg,fit:'shrink'});
+    s.addText(it.text,{x:x+.3,y:y+1.2,w:3.3,h:1,fontFace:BF,fontSize:15,color:C.ink,valign:'top'}); });
+  s.addNotes('Build the suspense. Read each card slowly. Nothing here gives away the winners.');
+
+  /* 3. Naughty reports */
+  divider('Part one','The Naughty Reports','Who reported who, and why','dagger','Every report came with a reason. Time to find out who turned on who.');
+  const recv=CONFIG.elves.map(e=>({e,r:S.reports.filter(x=>x.to===e.id&&x.type==='rival'),o:S.reports.filter(x=>x.to===e.id&&x.type==='own')})).map(x=>({...x,n:x.r.length+x.o.length}));
+  const byMost=[...recv].sort((a,b)=>b.n-a.n);
+  s=pptx.addSlide(); head(s,'Naughty reports','Most reported elves');
+  s.addChart(pptx.ChartType.bar,[{name:'Rival group',labels:byMost.map(x=>x.e.name),values:byMost.map(x=>x.r.length)},{name:'Own group',labels:byMost.map(x=>x.e.name),values:byMost.map(x=>x.o.length)}],
+    {x:.6,y:1.7,w:12.1,h:5.4,barDir:'bar',barGrouping:'stacked',chartColors:[C.berry,C.gold],catAxisOrientation:'maxMin',catAxisLabelFontFace:BF,catAxisLabelFontSize:14,valAxisLabelFontSize:12,showLegend:true,legendPos:'b',legendFontSize:12,valGridLine:{color:C.frost,style:'solid',size:1},valAxisMajorUnit:1});
+  s.addNotes(`Red is rival group reports, gold is reports from their own group. Next we go elf by elf, from the least reported to the most.`);
+  const sumBy=list=>{ const c={}; list.forEach(r=>c[r.from]=(c[r.from]||0)+1); return Object.entries(c).sort((p,q)=>q[1]-p[1]).map(([id,n])=>elf(id).name+(n>1?` ×${n}`:'')).join(', '); };
+  const topR=[...recv].sort((a,b)=>b.r.length-a.r.length)[0], mostId=topR?.r.length?topR.e.id:null;
+  const tiles=own=>{ const sl=pptx.addSlide(); head(sl,own?'Back-stabbers':'Naughty reports',own?'Stabbed in the back by their own group':'Reported by the rival groups');
+    const notes=[];
+    CONFIG.groups.forEach((g,gi)=>CONFIG.elves.filter(e=>e.group===g.id).forEach((e,ei)=>{
+      const x=.6+ei*4.1, y=1.65+gi*1.84, w=3.9, h=1.72, z=recv.find(q=>q.e.id===e.id), list=own?z.o:z.r, hot=!own&&e.id===mostId;
+      card(sl,x,y,w,h,list.length?(own?C.goldSoft:C.frost):C.snow,hot?C.berry:(list.length?(own?C.goldSoft:C.frost):'C9D8D2'));
+      sl.addShape(pptx.ShapeType.rect,{x:x+.02,y:y+.15,w:.1,h:h-.3,fill:{color:gcol(e.group)},line:{color:gcol(e.group)}});
+      sl.addText(e.name,{x:x+.3,y:y+.08,w:2.5,h:.5,fontFace:HF,fontSize:18,color:C.pine,valign:'middle'});
+      sl.addText(String(list.length),{x:x+2.8,y:y+.06,w:.9,h:.55,fontFace:HF,fontSize:24,color:list.length?(own?'8A5A12':C.berry):C.nice,align:'right',valign:'middle'});
+      sl.addText(list.length?'by '+sumBy(list):(own?'Untouched by their own group':'Not reported once'),{x:x+.3,y:y+.6,w:3.45,h:.36,fontFace:BF,fontSize:11,bold:true,color:C.muted,fit:'shrink'});
+      themeSummary(list).slice(0,3).forEach(([t,n],k)=>{ const tx=x+.3+k*1.18;
+        sl.addShape(pptx.ShapeType.roundRect,{x:tx,y:y+.96,w:1.1,h:.36,fill:{color:own?'F3DDB0':C.berrySoft},line:{color:own?'F3DDB0':C.berrySoft},rectRadius:.19});
+        sl.addText(t+(n>1?` ×${n}`:''),{x:tx,y:y+.96,w:1.1,h:.36,fontFace:BF,fontSize:10,bold:true,color:own?'8A5A12':C.berry,align:'center',valign:'middle',fit:'shrink'}); });
+      if(hot) sl.addText('MOST WANTED',{x:x+1.9,y:y+h-.32,w:1.85,h:.28,fontFace:BF,fontSize:9,bold:true,color:C.berry,align:'right',charSpacing:3});
+      notes.push(`${e.name} (${list.length}): `+(list.length?list.map(r=>`${elf(r.from).name}: "${r.reason}"`).join('; '):'none'));
+    }));
+    sl.addNotes((own?'Each tile shows who in their own group reported them, and the themes of the reasons. ':'Each tile shows who reported them, and the themes of the reasons. ')+'The real reasons are on the hidden slides that follow.\n'+notes.join('\n'));
+    return sl; };
+  tiles(false); tiles(true);
+  { const all=[...S.reports].sort((p,q)=>p.t-q.t), per=9, pages=Math.max(1,Math.ceil(all.length/per));
+    for(let pg=0;pg<pages;pg++){ const part=all.slice(pg*per,pg*per+per); s=pptx.addSlide(); s.hidden=true;
+      head(s,`CFO eyes only · hidden slide · ${pg+1} of ${pages}`,'Every reason given',{size:26});
+      const rows=[[hcell('WHO'),hcell('REPORTED'),hcell('TYPE'),hcell('THEME'),hcell('THE REASON')]];
+      part.forEach(r=>rows.push([cell(elf(r.from).name,{bold:true,fontSize:12}),cell(elf(r.to).name,{bold:true,fontSize:12,color:C.berry}),cell(r.type==='own'?'Own group':'Rival',{fontSize:11,color:r.type==='own'?'8A5A12':C.muted}),cell(themeOf(r.reason),{fontSize:11,color:C.muted}),cell('“'+r.reason+'”',{italic:true,fontSize:12})]));
+      if(!part.length) rows.push([cell('No reports'),cell(''),cell(''),cell(''),cell('')]);
+      s.addTable(rows,{x:.6,y:1.55,w:12.1,colW:[1.7,1.7,1.4,1.4,5.9],border:{type:'solid',color:C.frost,pt:1},rowH:.52});
+      s.addNotes('Hidden slide: it will not show when you present. Pick your favourite reasons from here and paste them into the Pettiest Reason slides that follow. Delete these hidden slides when you are done.'); }
+    for(let k=1;k<=4;k++){ s=pptx.addSlide(); s.background={color:k%2?C.snow:C.frost};
+      s.addText(`THE PETTIEST REASONS · #${k}`,{x:.8,y:1.2,w:11.7,h:.45,fontFace:BF,fontSize:14,bold:true,color:C.berry,charSpacing:5});
+      s.addText('“Paste the reason here”',{x:.8,y:1.9,w:11.7,h:2.6,fontFace:HF,fontSize:40,color:C.pine,valign:'middle',fit:'shrink'});
+      s.addText('Who reported who',{x:.8,y:4.8,w:11.7,h:.6,fontFace:BF,fontSize:22,bold:true,color:C.muted});
+      s.addNotes('Your pick: copy a reason from the hidden slides and replace the text. Delete this slide if you use fewer than four.'); }
+  }
+  const stab=CONFIG.elves.map(e=>({e,n:S.reports.filter(r=>r.from===e.id&&r.type==='own').length})).sort((a,b)=>b.n-a.n)[0];
+  if(stab?.n){ s=pptx.addSlide(); s.background={color:C.berry};
+    s.addText('BIGGEST BACK-STABBER',{x:.8,y:1.9,w:8,h:.5,fontFace:BF,fontSize:18,bold:true,color:C.goldSoft,charSpacing:6});
+    s.addText(stab.e.name,{x:.8,y:2.45,w:8.4,h:1.6,fontFace:HF,fontSize:72,color:C.snow,fit:'shrink'});
+    s.addText(`Reported their own group ${stab.n} ${stab.n===1?'time':'times'}. ${grp(stab.e.group).name}, watch your backs.`,{x:.8,y:4.2,w:8.2,h:1,fontFace:BF,fontSize:20,color:C.snow});
+    art(s,'dagger',9.3,1.7,3.6); s.addNotes('A fun award moment. Applause or boos.'); }
+
+  /* 4. Kitchen */
+  divider('Part two','Santa’s Kitchen','The winning answers','chef','Four questions. For each one, the top three answers, read from third to first.');
+  CONFIG.questions.forEach((x,qi)=>{ const rk=S.rankings[x.id];
+    s=pptx.addSlide(); head(s,`Question ${qi+1} of ${CONFIG.questions.length} · asked by ${chef(x.chef).name}`,x.text);
+    (rk?rk.picks:[]).forEach((e,i)=>{ if(!e) return; const j=2-i, y=1.95+j*1.7;
+      card(s,.6,y,12.1,1.5,i===0?C.goldSoft:C.frost,i===0?C.gold:C.frost);
+      s.addText(['1st','2nd','3rd'][i],{x:.85,y:y+.15,w:1.2,h:.5,fontFace:HF,fontSize:20,color:i===0?C.pine:C.muted});
+      s.addText(`+${P.kitchen[i]}`,{x:.85,y:y+.75,w:1.2,h:.45,fontFace:BF,fontSize:14,bold:true,color:C.nice});
+      s.addText('“'+(S.answers[e]?.[x.id]?.text||'')+'”',{x:2.1,y:y+.1,w:7.6,h:1.3,fontFace:BF,fontSize:16,italic:true,color:C.ink,valign:'middle',fit:'shrink'});
+      s.addText([{text:elf(e).name,options:{bold:true,fontSize:20,color:C.pine,breakLine:true}},{text:rk.why[i]?'Why: '+rk.why[i]:'',options:{fontSize:12,color:C.muted}}],{x:9.8,y:y+.1,w:2.8,h:1.3,fontFace:BF,valign:'middle'}); });
+    if(!rk) s.addText('Not ranked',{x:.6,y:2.2,w:12,h:.6,fontFace:BF,fontSize:20,color:C.muted});
+    s.addNotes('Read 3rd, then 2nd, then 1st (bottom to top). Read the answer before saying whose it was.'); });
+
+  /* 5. Group tasks */
+  divider('Part three','Group Tasks','Three tasks. Three groups. One winner each time.','trophy','Remind everyone what each task was before revealing the winner.');
+  CONFIG.groupTasks.forEach((name,k)=>{ const g=S.groupTasks?.[k]; s=pptx.addSlide();
+    s.background={color:g?gcol(g.group):C.frost};
+    s.addText(`GROUP TASK ${k+1}`,{x:.8,y:2.0,w:8,h:.5,fontFace:BF,fontSize:16,bold:true,color:g?C.goldSoft:C.muted,charSpacing:5});
+    s.addText(name,{x:.8,y:2.5,w:8.4,h:.9,fontFace:HF,fontSize:30,color:g?C.snow:C.pine,fit:'shrink'});
+    s.addText(g?`Won by ${grp(g.group).name}`:'Not judged',{x:.8,y:3.5,w:8.4,h:1,fontFace:HF,fontSize:40,color:g?C.snow:C.muted,fit:'shrink'});
+    if(g) s.addText(`+${P.group} to ${CONFIG.elves.filter(e=>e.group===g.group).map(e=>e.name).join(', ')}`,{x:.8,y:4.6,w:8.4,h:.6,fontFace:BF,fontSize:18,bold:true,color:C.goldSoft});
+    art(s,'trophy',9.3,1.6,3.6); s.addNotes('Explain the task, then reveal the winning group.'); });
+
+  /* 6. Reindeer */
+  divider('Part four','The Reindeer','Half were secretly vouching. Half were secretly biting.','snow','Six kids, six taps. Nobody knew which Reindeer were nice and which were naughty.');
+  [['vouch','Vouched for','halo',C.nice,C.niceSoft,'+'],['bite','Bitten','fangs',C.berry,C.berrySoft,'−']].forEach(([type,title,a,fg,bg,sign])=>{
+    const taps=S.taps.filter(x=>x.type===type).sort((p,q)=>p.t-q.t);
+    s=pptx.addSlide(); head(s,type==='vouch'?'The nice Reindeer':'The naughty Reindeer',title,{w:8.6});
+    art(s,a,9.6,.4,3.1);
+    taps.forEach((x,i)=>{ const y=1.9+i*1.35; card(s,.6,y,8.6,1.15,bg);
+      s.addText(x.reindeer,{x:.85,y,w:3,h:1.15,fontFace:HF,fontSize:24,color:fg,valign:'middle'});
+      s.addText(type==='vouch'?'vouched for':'bit',{x:3.6,y,w:1.8,h:1.15,fontFace:BF,fontSize:16,color:C.muted,valign:'middle'});
+      s.addText(elf(x.elf).name,{x:5.3,y,w:2.5,h:1.15,fontFace:HF,fontSize:24,color:C.pine,valign:'middle'});
+      s.addText(`${sign}${P.reindeer}`,{x:7.7,y,w:1.3,h:1.15,fontFace:HF,fontSize:22,color:fg,valign:'middle',align:'right'}); });
+    if(!taps.length) s.addText('No taps logged',{x:.6,y:2,w:8,h:.6,fontFace:BF,fontSize:20,color:C.muted});
+    s.addNotes(type==='vouch'?'Bring the vouching Reindeer up for applause.':'Now the biters. Bring them up too, they earned it.'); });
+
+  /* 7. Miracles */
+  divider('Part five','Xmas Miracles',`A secret task, sent only to elves who dropped below ${P.miracleTrigger}.`,'gift','If you got one of these, you were in trouble. Reveal who needed saving.');
+  s=pptx.addSlide(); head(s,'Xmas Miracles','Who needed saving');
+  const ml=Object.entries(S.miracles).sort((a,b)=>a[1].t-b[1].t);
+  ml.forEach(([id,m],i)=>{ const y=1.85+i*1.2, ok=m.status==='approved'; card(s,.6,y,12.1,1.05,ok?C.niceSoft:C.frost);
+    s.addText(elf(id).name,{x:.85,y,w:2.4,h:1.05,fontFace:HF,fontSize:20,color:C.pine,valign:'middle'});
+    s.addText(CONFIG.missions[m.mission].text,{x:3.3,y,w:6.6,h:1.05,fontFace:BF,fontSize:15,color:C.ink,valign:'middle',fit:'shrink'});
+    s.addText(ok?`+${P.miracle}`:'Failed',{x:10,y,w:2.5,h:1.05,fontFace:HF,fontSize:20,color:ok?C.nice:C.muted,valign:'middle',align:'right'}); });
+  if(!ml.length) s.addText('Nobody needed one. Impressive.',{x:.6,y:2.2,w:12,h:.7,fontFace:BF,fontSize:24,color:C.muted});
+  art(s,'gift',11.1,.25,1.5);
+  s.addNotes(`Say when each miracle was sent. ${ml.filter(([,m])=>m.status==='approved').length} of ${ml.length} were completed.`);
+
+  /* 8. The race, paced */
+  divider('Part six','The Race','How the weekend unfolded, one stretch at a time','clock','Now the Nice points. We stop at midday: the rest of the afternoon is saved for the final reveal.');
+  const o=T('open');
+  const segs=[
+    {a:o,b:o+4*36e5,title:'Friday night',marks:[o,o+36e5,o+2*36e5,o+3*36e5,o+4*36e5]},
+    {a:o+4*36e5,b:T('kitchenClose'),title:'Overnight to breakfast'},
+    {a:T('kitchenClose'),b:T('reindeerBy'),title:'The Reindeer strike'},
+    {a:T('reindeerBy'),b:T('chefRankBy'),title:'Kitchen scores land'},
+  ];
+  const allMarks=[o,o+36e5,o+2*36e5,o+3*36e5,o+4*36e5,T('kitchenClose')-2*36e5,T('kitchenClose')-36e5,T('kitchenClose'),T('kitchenClose')+30*6e4,T('reindeerBy'),T('reindeerBy')+30*6e4,T('chefRankBy')];
+  const snap=t=>{ let last=R.hist[0].s; for(const h of R.hist){ if(h.t<=t) last=h.s; else break; } return last; };
+  segs.forEach((g,si)=>{ const marks=allMarks.filter(t=>t<=g.b);
+    s=pptx.addSlide(); head(s,`The race · ${si+1} of ${segs.length} · ${fmt(g.a)} to ${fmt(g.b)}`,g.title,{w:8.4});
+    s.addChart(pptx.ChartType.line, CONFIG.elves.map(e=>({name:e.name,labels:marks.map(fmt),values:marks.map(t=>snap(t)[e.id])})),
+      {x:.4,y:1.55,w:8.7,h:5.7,lineSize:2.5,lineDataSymbol:'circle',lineDataSymbolSize:6,chartColors:CONFIG.elves.map(e=>gcol(e.group)),showLegend:true,legendPos:'b',legendFontSize:11,catAxisLabelFontSize:10,valAxisLabelFontSize:11,valAxisMinVal:P.floor,valGridLine:{color:C.frost,style:'solid',size:1}});
+    const st=snap(g.b), lead=CONFIG.elves.map(e=>e.id).sort((p,q)=>st[q]-st[p])[0];
+    card(s,9.35,1.6,3.4,1.3,C.goldSoft,C.gold);
+    s.addText([{text:`TOP AT ${fmt(g.b).toUpperCase()}`,options:{fontSize:10,bold:true,color:'8A5A12',breakLine:true,charSpacing:3}},{text:`${elf(lead).name} · ${st[lead]}`,options:{fontFace:HF,fontSize:20,color:C.pine}}],{x:9.55,y:1.6,w:3.1,h:1.3,fontFace:BF,valign:'middle'});
+    segmentStory(R,g.a,g.b).forEach((l,i)=>{ const y=3.1+i*1.95; const [bg,fg]=tone(l.tone); card(s,9.35,y,3.4,1.8,bg);
+      s.addText([{text:l.t,options:{fontFace:HF,fontSize:16,color:fg,breakLine:true}},{text:l.s,options:{fontSize:12,color:C.ink}}],{x:9.55,y:y+.1,w:3.05,h:1.6,fontFace:BF,valign:'top',fit:'shrink'}); });
+    s.addNotes(`Talk through the biggest move in this stretch. ${segmentStory(R,g.a,g.b).map(l=>l.t+' ('+l.s+')').join('. ')}`); });
+  s=pptx.addSlide(); s.background={color:C.pine};
+  s.addText('And then…',{x:.8,y:2.5,w:8.4,h:1.2,fontFace:HF,fontSize:54,color:C.snow});
+  s.addText(`The afternoon, from ${fmt(T('chefRankBy'))} to ${fmt(T('close'))}, decided everything.`,{x:.8,y:3.8,w:8.2,h:1,fontFace:BF,fontSize:22,color:C.gold});
+  art(s,'clock',9.3,1.6,3.6); s.addNotes('Pause. The final positions come next.');
+
+  /* 9. Shared: since midday */
+  const noon=T('chefRankBy'), noonSc=snap(noon), noonRank=CONFIG.elves.map(e=>e.id).sort((p,q)=>noonSc[q]-noonSc[p]);
+  const since=ids=>{ const by={}; let d=0; R.applied.filter(x=>x.t>noon).forEach(x=>ids.forEach(id=>{ const v=x.fx[id]; if(!v) return; d+=v; const k=x.kind==='own'&&id===x.from?'stealing from own group':KIND[x.kind]; by[k]=(by[k]||0)+v; }));
+    return {d,parts:Object.entries(by).sort((p,q)=>Math.abs(q[1])-Math.abs(p[1])).slice(0,3).map(([k,v])=>`${v>0?'+':'−'}${Math.abs(v)} ${k}`)}; };
+  const sgn=n=>n>0?`+${n}`:n<0?`−${-n}`:'±0';
+  const ord=n=>n+(['th','st','nd','rd'][(n%100-20)%10]||['th','st','nd','rd'][n%100]||'th');
+  /* 9b. Individuals, bottom up */
+  divider('The final reveal','Head Elf','Every elf, from the bottom up','crown','One elf at a time, from ninth place up. The Head Elf comes first, then the groups.');
+  const rk=R.rank, N=rk.length;
+  const row=(sl,id,pos,y,hi)=>{ const e=elf(id); card(sl,.6,y,7.7,.56,hi?C.goldSoft:C.frost,hi?C.gold:C.frost);
+    sl.addShape(pptx.ShapeType.rect,{x:.6,y,w:.14,h:.56,fill:{color:gcol(e.group)},line:{color:gcol(e.group)}});
+    sl.addText(`${pos}`,{x:.85,y,w:.8,h:.56,fontFace:HF,fontSize:16,color:C.muted,valign:'middle'});
+    sl.addText(e.name,{x:1.5,y,w:2.6,h:.56,fontFace:HF,fontSize:18,color:C.pine,valign:'middle'});
+    sl.addText(grp(e.group).name,{x:4.1,y,w:2.6,h:.56,fontFace:BF,fontSize:12,color:gcol(e.group),bold:true,valign:'middle'});
+    sl.addText(`${R.sc[id]}`,{x:6.6,y,w:1.5,h:.56,fontFace:HF,fontSize:18,color:C.pine,valign:'middle',align:'right'}); };
+  for(let p=N;p>=3;p--){ s=pptx.addSlide(); head(s,`Every elf, from the bottom up`,`In ${p}${p===3?'rd':'th'} place…`);
+    for(let q=N;q>=p;q--) row(s,rk[q-1],q,1.75+(q-p)*.64,q===p);
+    const id=rk[p-1], sn=since([id]), was=noonRank.indexOf(id)+1;
+    card(s,8.55,1.75,4.15,2.9,C.frost);
+    s.addText([{text:'HOW THEY GOT HERE',options:{fontSize:10,bold:true,color:C.berry,charSpacing:3,breakLine:true}},
+      {text:elf(id).name,options:{fontFace:HF,fontSize:22,color:C.pine,breakLine:true}},
+      {text:`At 12pm: ${noonSc[id]} points, ${ord(was)} place`,options:{fontSize:14,bold:true,color:C.ink,breakLine:true}},
+      {text:`Since then: ${sgn(sn.d)}`,options:{fontSize:14,bold:true,color:sn.d>0?C.nice:sn.d<0?C.berry:C.muted,breakLine:true}},
+      ...sn.parts.map(t=>({text:'• '+t,options:{fontSize:13,color:C.ink,breakLine:true}})),
+      {text:was>p?`Up ${was-p} ${was-p===1?'place':'places'} since midday.`:was<p?`Down ${p-was} ${p-was===1?'place':'places'} since midday.`:'Held their place since midday.',options:{fontSize:13,italic:true,color:C.muted}}],
+      {x:8.8,y:1.9,w:3.7,h:2.65,fontFace:BF,valign:'top',paraSpaceAfter:4,fit:'shrink'});
+    s.addNotes(`${ord(p)}: ${elf(id).name} on ${R.sc[id]}. At midday they were ${ord(was)} on ${noonSc[id]}; since then ${sgn(sn.d)} (${sn.parts.join(', ')||'no change'}).`); }
+  s=pptx.addSlide(); s.background={color:C.pine};
+  s.addText('THE FINAL TWO',{x:.6,y:.45,w:12.1,h:.4,fontFace:BF,fontSize:14,bold:true,color:C.gold,charSpacing:6,align:'center'});
+  [[1,rk[1],'Runner-up',C.pine2,7.6],[0,rk[0],'Head Elf',C.goldSoft,.6]].forEach(([i,id,lab,fill,x])=>{ const win=i===0;
+    card(s,x,1.3,5.15,5.6,fill,win?C.gold:fill);
+    if(win) art(s,'crown',x+1.65,1.45,1.85);
+    s.addText(lab.toUpperCase(),{x,y:win?3.3:2.2,w:5.15,h:.5,fontFace:BF,fontSize:16,bold:true,color:win?'8A5A12':C.mint,align:'center',charSpacing:5});
+    s.addText(elf(id).name,{x,y:win?3.8:2.8,w:5.15,h:1.3,fontFace:HF,fontSize:win?54:40,color:win?C.pine:C.snow,align:'center',fit:'shrink'});
+    s.addText(`${R.sc[id]} Nice points · ${grp(elf(id).group).name}`,{x,y:win?5.2:4.2,w:5.15,h:.6,fontFace:BF,fontSize:16,color:win?C.ink:C.mint,align:'center'});
+    const sn=since([id]), was=noonRank.indexOf(id)+1;
+    s.addText(`At 12pm: ${noonSc[id]} (${ord(was)}). Since then ${sgn(sn.d)}${sn.parts.length?': '+sn.parts.join(', '):''}`,{x:x+.3,y:win?5.8:4.9,w:4.55,h:.9,fontFace:BF,fontSize:12,color:win?C.muted:C.mint,align:'center',valign:'top',fit:'shrink'}); });
+  s.addNotes(`Runner-up: ${elf(rk[1]).name}. Head Elf: ${elf(rk[0]).name}. Tip: in PowerPoint, add an Appear animation to the Head Elf card so it lands on a click.`);
+  /* 10. Groups, staged */
+  divider('And finally','The Winning Group','Which elves take over Christmas from Santa?','trophy','The Head Elf is crowned. Now the group prize.');
+  const gs=R.groups; // [1st,2nd,3rd]
+  const groupSlide=upto=>{ const final=upto===gs.length; s=pptx.addSlide(); head(s,'The groups',final?'The Winning Group':upto===1?'In third place…':'In second place…',{dark:final});
+    for(let i=0;i<gs.length;i++){ const place=gs.length-i, g=gs[place-1], x=.6+i*4.15;
+      if(i<upto){ card(s,x,1.9,3.9,4.9,g.color.replace('#',''));
+        s.addText(['1st','2nd','3rd'][place-1],{x:x+.3,y:2.1,w:3.3,h:.8,fontFace:HF,fontSize:30,color:C.snow});
+        s.addText(g.name,{x:x+.3,y:2.9,w:3.3,h:1.1,fontFace:HF,fontSize:24,color:C.snow,valign:'top',fit:'shrink'});
+        const mem=CONFIG.elves.filter(e=>e.group===g.id), sn=since(mem.map(e=>e.id)), gNoon=mem.reduce((n,e)=>n+noonSc[e.id],0);
+        s.addText(mem.map(e=>e.name).join('\n'),{x:x+.3,y:3.85,w:3.3,h:1.15,fontFace:BF,fontSize:15,bold:true,color:C.snow,valign:'top'});
+        s.addText([{text:`At 12pm: ${gNoon}. Since then: ${sgn(sn.d)}`,options:{bold:true,breakLine:true}},{text:sn.parts.join(' · ')||'No change',options:{}}],{x:x+.3,y:5.0,w:3.3,h:.85,fontFace:BF,fontSize:11,color:C.snow,valign:'top',fit:'shrink'});
+        s.addText(`${g.total} pts`,{x:x+.3,y:5.85,w:3.3,h:.8,fontFace:HF,fontSize:28,color:C.goldSoft});
+        if(place===1) art(s,'crown',x+2.45,1.15,1.55); }
+      else { s.addShape(pptx.ShapeType.roundRect,{x,y:1.9,w:3.9,h:4.9,fill:{color:C.frost},line:{color:'C9D8D2',width:1.5,dashType:'dash'},rectRadius:.12});
+        s.addText('?',{x,y:1.9,w:3.9,h:4.9,fontFace:HF,fontSize:90,color:'B5C7C0',align:'center',valign:'middle'}); } }
+    return s; };
+  const gNote=g=>{ const sn=since(CONFIG.elves.filter(e=>e.group===g.id).map(e=>e.id)); return `${g.name}: ${g.total}. Since midday ${sgn(sn.d)} (${sn.parts.join(', ')||'no change'}).`; };
+  groupSlide(1).addNotes('Third place. '+gNote(gs[2]));
+  groupSlide(2).addNotes('Second place. '+gNote(gs[1]));
+  groupSlide(3).addNotes('The Winning Group, taking over Christmas from Santa. '+gNote(gs[0]));
+
+  s=pptx.addSlide(); s.background={color:C.pine};
+  s.addText('Merry Friendmas',{x:.8,y:2.6,w:8.4,h:1.4,fontFace:HF,fontSize:56,color:C.snow});
+  s.addText('He sees you when you’re sleeping. So did the app.',{x:.8,y:4.0,w:8.4,h:.6,fontFace:BF,fontSize:20,color:C.gold});
+  art(s,'hat',9.3,1.6,3.6);
+  return await pptx.write({outputType:'blob'});
+}
+
+/* ---------- boot ---------- */
+checkMiracles(); persist(); render();
+setInterval(()=>{ if(!DEMO) { checkMiracles(); render(); } },60000);
+</script>
+
+</body></html>
