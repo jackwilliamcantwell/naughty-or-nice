@@ -286,9 +286,11 @@ const kitchenOpen = () => now()>=T('open') && now()<T('kitchenClose');
 const phaseLabel = () => now()<T('open') ? `Opens ${fmt(T('open'))}` : now()<T('close') ? `Open · closes ${fmt(T('close'))}` : 'Closed · results at 8pm';
 
 /* ---------- scoring engine ---------- */
+const rstat=r=>r.status||'approved';
+const approvedReports=()=>S.reports.filter(r=>rstat(r)==='approved');
 function ledger(){
   const it=[];
-  S.reports.forEach(r=>it.push({t:r.t,kind:r.type,from:r.from,to:r.to,reason:r.reason,id:r.id}));
+  approvedReports().forEach(r=>it.push({t:r.approvedT||r.t,kind:r.type,from:r.from,to:r.to,reason:r.reason,id:r.id}));
   Object.entries(S.rankings).forEach(([qid,rk])=>rk.picks.forEach((e,i)=>{ if(e) it.push({t:rk.t,kind:'kitchen',to:e,amt:P.kitchen[i],qid,place:i+1}); }));
   S.taps.forEach(x=>it.push({t:x.t,kind:x.type,to:x.elf,reindeer:x.reindeer,id:x.id}));
   Object.entries(S.miracles).forEach(([e,m])=>{ if(m.status==='approved') it.push({t:m.approvedT,kind:'miracle',to:e}); });
@@ -364,8 +366,8 @@ function render(){
     tabs=[['home','Home'],['report','Naughty reports'],['kitchen','Santa’s Kitchen'],['gossip','Gossip'],...(m?[['mission','Xmas Miracle',m.status==='assigned'?'!':'']]:[]),['rules','How it works']]; }
   if(persona.role==='chef'){ const c=chef(persona.id); who=`<b>${esc(c.name)}</b>Santa’s Kitchen`; tabs=[['kitchen','Your questions']]; }
   if(persona.role==='cfo'){ who=`<b>Claus HQ</b>Mr &amp; Mrs Claus`;
-    const pg=S.gossip.filter(g=>g.status==='pending').length, pm=Object.values(S.miracles).filter(m=>m.status==='claimed').length;
-    tabs=[['live','Live scores'],['gossip','Gossip',pg||''],['miracles','Miracles',pm||''],['tasks','Group tasks'],['reindeer','Reindeer'],['activity','Activity'],['results','Results deck'],['setup','Links & setup']]; }
+    const pr=S.reports.filter(r=>rstat(r)==='pending').length, pg=S.gossip.filter(g=>g.status==='pending').length, pm=Object.values(S.miracles).filter(m=>m.status==='claimed').length;
+    tabs=[['live','Live scores'],['reports','Naughty reports',pr||''],['gossip','Gossip',pg||''],['miracles','Miracles',pm||''],['tasks','Group tasks'],['reindeer','Reindeer'],['activity','Activity'],['results','Results deck'],['setup','Links & setup']]; }
   if(!tabs.find(t=>t[0]===tab)) tab=tabs[0][0];
   const showBar = DEMO || CFO_DEVICE || S.demoClock;
   const demo = !showBar ? '' : (!DEMO && !CFO_DEVICE) ? `<div class="demobar"><div class="wrap"><b>Test mode</b><span class="clock">Test clock: ${fmt(now())}</span></div></div>` : `<div class="demobar"><div class="wrap"><b>${DEMO?'Demo':S.demoClock?'Test clock on':'Claus HQ'}</b>
@@ -394,7 +396,7 @@ function elfView(){
   if(tab==='rules') return elfRules(me);
   return elfHome(me);
 }
-function used(me,type){ return S.reports.filter(r=>r.from===me.id&&r.type===type); }
+function used(me,type){ return S.reports.filter(r=>r.from===me.id&&r.type===type&&rstat(r)!=='rejected'); }
 function closedNote(){
   if(now()<T('open')) return `<div class="lock"><span>The workshop opens <b>${fmt(T('open'))}</b>. Nothing can be filed until then.</span></div>`;
   if(now()>=T('close')) return `<div class="lock"><span>The workshop has closed. Mr & Mrs Claus reveal everything at <b>8pm</b>, after Friendmas dinner.</span></div>`;
@@ -463,7 +465,7 @@ function elfReport(me){
   const countOn=id=>list.filter(r=>r.to===id).length;
   const open=isOpen();
   return `${closedNote()}
-  <section class="card"><div><h1 class="h">File a Naughty report</h1><p class="sub">Every report needs a reason. The pettier, the better. Mr & Mrs Claus read them all out at the results.</p></div>
+  <section class="card"><div><h1 class="h">File a Naughty report</h1><p class="sub">Every report needs a reason, and Mr & Mrs Claus approve or reject each one. Make it properly serious or properly ridiculous. Boring ones get rejected, and you get that report back to try again.</p></div>
     <div class="seg" role="group" aria-label="Report type">
       <button aria-pressed="${type==='rival'}" onclick="ui={type:'rival'};render()">Rival group</button>
       <button aria-pressed="${type==='own'}" onclick="ui={type:'own'};render()">Own group</button>
@@ -476,12 +478,12 @@ function elfReport(me){
         ${type==='own'?`<p class="hint" style="margin:6px 0 0">Max ${L.ownPerTarget} reports on the same elf.</p>`:''}</div>
       <div><label class="lab" for="reason">Reason</label><textarea id="reason" rows="2" maxlength="160" placeholder="e.g. Didn’t pass me the salt" oninput="ui.reason=this.value">${esc(ui.reason||'')}</textarea></div>
       ${ui.confirm ? `<div class="confirm"><span>Report <b>${esc(elf(ui.to).name)}</b> for <q>${esc(ui.reason)}</q>? This can’t be undone.</span>
-          <div class="row"><button class="btn berry" onclick="fileReport()">Yes, file it</button><button class="btn ghost" onclick="ui.confirm=false;render()">Cancel</button></div></div>`
+          <div class="row"><button class="btn berry" onclick="fileReport()">Yes, send it</button><button class="btn ghost" onclick="ui.confirm=false;render()">Cancel</button></div></div>`
         : `<button class="btn berry wide" onclick="if(!ui.to){toast('Pick an elf first');return} if(!(ui.reason||'').trim()){toast('Add a reason');return} ui.confirm=true;render()">File Naughty report</button>`}
     ` : left ? '' : `<div class="lock">You’ve used all your ${type==='rival'?'rival group':'own group'} reports.</div>`}
   </section>
   <section class="card"><h2 class="h" style="font-size:19px">Your reports</h2>
-    ${S.reports.filter(r=>r.from===me.id).length? `<div class="list">${S.reports.filter(r=>r.from===me.id).sort((a,b)=>b.t-a.t).map(r=>`<div class="item"><span><b>${esc(elf(r.to).name)}</b> <span class="pill ${r.type==='own'?'p-gold':'p-bad'}">${r.type==='own'?'Own group':'Rival'}</span></span><q>${esc(r.reason)}</q><span class="meta">${fmt(r.t)}</span></div>`).join('')}</div>` : `<div class="empty">No reports filed yet.</div>`}
+    ${S.reports.filter(r=>r.from===me.id).length? `<div class="list">${S.reports.filter(r=>r.from===me.id).sort((a,b)=>b.t-a.t).map(r=>{ const st=rstat(r); return `<div class="item"><span><b>${esc(elf(r.to).name)}</b> <span class="pill ${r.type==='own'?'p-gold':'p-bad'}">${r.type==='own'?'Own group':'Rival'}</span> <span class="pill ${st==='approved'?'p-nice':st==='rejected'?'p-bad':'p-mute'}">${st==='approved'?'Approved':st==='rejected'?'Rejected: too boring':'Waiting for approval'}</span></span><q>${esc(r.reason)}</q><span class="meta">${fmt(r.t)}${st==='rejected'?' · you got this report back':''}</span></div>`; }).join('')}</div>` : `<div class="empty">No reports filed yet.</div>`}
   </section>`;
 }
 function fileReport(){
@@ -490,8 +492,8 @@ function fileReport(){
   const list=used(me,type);
   if(list.length >= (type==='rival'?L.rival:L.own)) return toast('No reports left');
   if(type==='own' && list.filter(r=>r.to===ui.to).length>=L.ownPerTarget) return toast('Max 2 on the same elf');
-  S.reports.push({id:uid(),type,from:me.id,to:ui.to,reason:ui.reason.trim(),t:now()});
-  ui={type}; commit(); toast('Filed with Mr & Mrs Claus. Ho ho ho.');
+  S.reports.push({id:uid(),type,from:me.id,to:ui.to,reason:ui.reason.trim(),t:now(),status:'pending'});
+  ui={type}; commit(); toast('Sent to Mr & Mrs Claus for approval');
 }
 function elfKitchen(me){
   const open=kitchenOpen();
@@ -585,7 +587,7 @@ function submitRanking(qid){
    CFO
    ============================================================ */
 function cfoView(){
-  return ({tasks:cfoTasks,live:cfoLive,gossip:cfoGossip,miracles:cfoMiracles,reindeer:cfoReindeer,activity:cfoActivity,results:cfoResults,setup:cfoSetup}[tab]||cfoLive)();
+  return ({reports:cfoReports,tasks:cfoTasks,live:cfoLive,gossip:cfoGossip,miracles:cfoMiracles,reindeer:cfoReindeer,activity:cfoActivity,results:cfoResults,setup:cfoSetup}[tab]||cfoLive)();
 }
 function cfoLive(){
   const R=scores(now());
@@ -598,6 +600,15 @@ function cfoLive(){
       <td>${m?`<span class="pill ${m.status==='approved'?'p-nice':m.status==='claimed'?'p-gold':'p-mute'}">${m.status}</span>`:''}</td></tr>`; }).join('')}
   </tbody></table></div><p class="hint" style="margin:0">Ties go to whoever reached their score first. Floor ${P.floor}; Xmas Miracle triggers below ${P.miracleTrigger} until ${fmt(T('miracleCutoff'))}.</p></section>`;
 }
+function cfoReports(){
+  const pend=S.reports.filter(r=>rstat(r)==='pending').sort((a,b)=>a.t-b.t), done=S.reports.filter(r=>rstat(r)!=='pending').sort((a,b)=>(b.vettedT||b.t)-(a.vettedT||a.t));
+  const card=(r,btns)=>`<div class="item"><span><b>${esc(elf(r.from).name)}</b> reported <b>${esc(elf(r.to).name)}</b> <span class="pill ${r.type==='own'?'p-gold':'p-bad'}">${r.type==='own'?'Own group':'Rival'}</span>${btns?'':` <span class="pill ${rstat(r)==='approved'?'p-nice':'p-bad'}">${rstat(r)}</span>`}</span><q>${esc(r.reason)}</q><span class="meta">${fmt(r.t)}</span>
+    ${btns?`<div class="row"><button class="btn sm" onclick="vetReport('${r.id}','approved')">Approve</button><button class="btn sm ghost" onclick="vetReport('${r.id}','rejected')">Reject: too boring</button></div>`:''}</div>`;
+  return `<section class="card"><h1 class="h">Naughty reports to approve</h1><p class="sub">Points only count once you approve. Rejected reports go back to the elf so they can try again.</p>
+    ${pend.length?`<div class="list">${pend.map(r=>card(r,true)).join('')}</div>`:`<div class="empty">Nothing waiting.</div>`}</section>
+  <section class="card"><h2 class="h" style="font-size:19px">Already decided</h2>${done.length?`<div class="list">${done.map(r=>card(r,false)).join('')}</div>`:`<div class="empty">None yet.</div>`}</section>`;
+}
+function vetReport(id,st){ const r=S.reports.find(x=>x.id===id); if(!r) return; r.status=st; r.vettedT=now(); if(st==='approved') r.approvedT=now(); commit(); toast(st==='approved'?'Approved':'Rejected. The elf gets it back'); }
 function cfoGossip(){
   const pend=S.gossip.filter(g=>g.status==='pending').sort((a,b)=>a.t-b.t), rest=S.gossip.filter(g=>g.status!=='pending').sort((a,b)=>b.t-a.t);
   return `<section class="card"><h1 class="h">Gossip to vet</h1><p class="sub">Approved gossip appears on every elf’s feed, anonymously.</p>
@@ -650,7 +661,7 @@ function logTap(){
 function undoTap(id){ S.taps=S.taps.filter(x=>x.id!==id); commit(); toast('Tap removed'); }
 function activity(){
   const a=[];
-  S.reports.forEach(r=>a.push({t:r.t,html:`<b>${esc(elf(r.from).name)}</b> reported <b>${esc(elf(r.to).name)}</b> <span class="pill ${r.type==='own'?'p-gold':'p-bad'}">${r.type==='own'?'own group':'rival'}</span> <q>${esc(r.reason)}</q>`}));
+  S.reports.forEach(r=>a.push({t:r.t,html:`<span class="pill ${rstat(r)==='approved'?'p-nice':rstat(r)==='rejected'?'p-bad':'p-mute'}">${rstat(r)}</span> <b>${esc(elf(r.from).name)}</b> reported <b>${esc(elf(r.to).name)}</b> <span class="pill ${r.type==='own'?'p-gold':'p-bad'}">${r.type==='own'?'own group':'rival'}</span> <q>${esc(r.reason)}</q>`}));
   S.gossip.forEach(g=>a.push({t:g.t,html:`<b>${esc(elf(g.from).name)}</b> posted gossip <q>${esc(g.text)}</q> <span class="pill p-mute">${g.status}</span>`}));
   Object.entries(S.answers).forEach(([e,o])=>Object.entries(o).forEach(([qid,x])=>a.push({t:x.t,html:`<b>${esc(elf(e).name)}</b> answered “${esc(q(qid).text)}”`})));
   Object.entries(S.rankings).forEach(([qid,r])=>a.push({t:r.t,html:`<b>${esc(chef(q(qid).chef).short)}</b> ranked “${esc(q(qid).text)}”`}));
@@ -719,7 +730,7 @@ function simulate(){
   CONFIG.elves.forEach(e=>{
     const rivals=CONFIG.elves.filter(x=>x.group!==e.group), mates=CONFIG.elves.filter(x=>x.group===e.group&&x.id!==e.id);
     const nr=between(1,3), no=between(0,3); const ownCount={};
-    for(let k=0;k<nr;k++) S.reports.push({id:uid(),type:'rival',from:e.id,to:pickR(rivals).id,reason:pickR(reasons),t:awake(o+20*60000,c-30*60000)});
+    for(let k=0;k<nr;k++) S.reports.push({id:uid(),type:'rival',from:e.id,to:pickR(rivals).id,reason:pickR(reasons),t:awake(o+20*60000,c-30*60000)}); S.reports.forEach(r=>{ if(!r.status){ r.status=rnd()<.85?'approved':'rejected'; r.vettedT=r.t+between(5,45)*60000; if(r.status==='approved') r.approvedT=r.vettedT; } });
     for(let k=0;k<no;k++){ const t=pickR(mates); if((ownCount[t.id]||0)>=2) continue; ownCount[t.id]=(ownCount[t.id]||0)+1; S.reports.push({id:uid(),type:'own',from:e.id,to:t.id,reason:pickR(reasons),t:awake(o+40*60000,c-20*60000)}); }
   });
   // gossip
@@ -820,6 +831,10 @@ function segmentStory(R,a,b){
 }
 
 async function buildDeck(){
+  const ALL=S.reports; S.reports=approvedReports();
+  try { return await buildDeckInner(); } finally { S.reports=ALL; }
+}
+async function buildDeckInner(){
   const C={pine:'10392C',pine2:'1B5442',snow:'FFFFFF',frost:'EAF2EF',ink:'12241E',muted:'56685F',berry:'B4213D',berrySoft:'F8E3E7',nice:'1F7A4D',niceSoft:'DFF1E6',gold:'D8A23A',goldSoft:'FBF0D9',mint:'CFE3DA'};
   const HF='Arial Black', BF='Arial';
   const ART={}; for(const [k,v] of Object.entries(ART_SVG)) ART[k]=await svgPng(v);
