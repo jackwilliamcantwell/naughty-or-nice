@@ -104,6 +104,8 @@ button.todo .tt span{font-size:13px;color:var(--muted)}
 button.todo .arr{color:var(--muted);font-size:22px;line-height:1}
 button.todo.urgent{background:var(--gold-soft);box-shadow:inset 0 0 0 1.5px var(--gold)}
 button.todo.urgent .tick{border-color:var(--gold)}
+button.todo.rej{background:var(--berry-soft);box-shadow:inset 0 0 0 1.5px var(--berry)} button.todo.rej .tick{border-color:var(--berry);background:var(--berry)} button.todo.rej .tick::after{content:'!';color:#fff}
+button.todo.info .tick{border-style:dashed}
 button.todo.done{opacity:.65} button.todo.done .tick{background:var(--nice);border-color:var(--nice)}
 button.todo.done b{text-decoration:line-through;text-decoration-thickness:1.5px}
 details.donebox summary{cursor:pointer;font-weight:800;color:var(--muted);font-size:14px;padding:4px 0}
@@ -409,6 +411,11 @@ function elfTodo(me){
   if(m && open && (m.status==='assigned'||m.status==='rejected')) add(false,'Do your Xmas Miracle',`Secret task · +${P.miracle}`,"tab='mission'",true);
   if(m && m.status==='claimed') add(false,'Show the Clauses your evidence','For your Xmas Miracle',"tab='mission'",true);
   if(m && m.status==='approved') add(true,'Xmas Miracle done','',"tab='mission'");
+  const mineR=S.reports.filter(x=>x.from===me.id);
+  mineR.filter(x=>rstat(x)==='rejected' && !mineR.some(y=>y.type===x.type && y.t>(x.vettedT||x.t))).forEach(x=>
+    add(false,`Rejected: your report on ${elf(x.to).name}`,`“${x.reason}” was too boring. You’ve got the report back, so try again.`,`tab='report';ui={type:'${x.type}'}`,true));
+  const waiting=mineR.filter(x=>rstat(x)==='pending').length;
+  if(waiting) items.push({done:false,info:true,title:`${waiting} report${waiting>1?'s':''} waiting for approval`,sub:'Mr & Mrs Claus are reviewing it',go:"tab='report'"});
   const r=L.rival-used(me,'rival').length, o=L.own-used(me,'own').length;
   add(r===0, r?'Report a rival elf':'Rival reports used', r?`${r} of ${L.rival} left · −${P.rival} to them`:'', "tab='report';ui={type:'rival'}");
   add(o===0, o?'Report an elf in your own group':'Own group reports used', o?`${o} of ${L.own} left · +${P.own} to you`:'', "tab='report';ui={type:'own'}");
@@ -422,7 +429,7 @@ function elfTodo(me){
 function elfHome(me){
   const items=elfTodo(me), todo=items.filter(i=>!i.done).sort((a,b)=>(b.urgent?1:0)-(a.urgent?1:0)), done=items.filter(i=>i.done);
   const feed=S.gossip.filter(g=>g.status==='approved'&&g.approvedT<=now()).sort((a,b)=>b.approvedT-a.approvedT);
-  const li=i=>`<button class="todo ${i.done?'done':''} ${i.urgent?'urgent':''}" onclick="${i.go};render();scrollTo(0,0)"><span class="tick" aria-hidden="true">${i.done?'✓':''}</span><span class="tt"><b>${esc(i.title)}</b>${i.sub?`<span>${esc(i.sub)}</span>`:''}</span><span class="arr" aria-hidden="true">›</span></button>`;
+  const li=i=>`<button class="todo ${i.done?'done':''} ${i.urgent?'urgent':''} ${i.title.startsWith('Rejected')?'rej':''} ${i.info?'info':''}" onclick="${i.go};render();scrollTo(0,0)"><span class="tick" aria-hidden="true">${i.done?'✓':''}</span><span class="tt"><b>${esc(i.title)}</b>${i.sub?`<span>${esc(i.sub)}</span>`:''}</span><span class="arr" aria-hidden="true">›</span></button>`;
   return `
   <section class="card pine"><div class="eyebrow" style="color:var(--gold)">${esc(grp(me.group).name)}</div>
     <h1 class="h">Hello, ${esc(me.name)}</h1>
